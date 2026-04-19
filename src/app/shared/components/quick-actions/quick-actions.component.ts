@@ -38,46 +38,61 @@ import { Component, Output, EventEmitter } from '@angular/core';
     .quick-actions {
       display: flex;
       justify-content: space-around;
-      padding: 20px 10px;
-      margin-bottom: 10px;
+      padding: 24px 16px;
+      margin: 16px;
+      background: var(--color-bg-secondary);
+      border-radius: 16px;
+      border: 1px solid var(--color-border);
     }
 
     .action-item {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       cursor: pointer;
     }
 
     .action-btn {
-      width: 56px;
-      height: 56px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: var(--color-bg-primary);
+      border: 2px solid var(--color-border);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
-      color: var(--color-text);
-      transition: all 0.2s ease;
+      font-size: 28px;
+      color: var(--color-text-primary);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .action-btn:hover {
+      border-color: var(--color-primary);
+      background: var(--color-primary-light);
     }
 
     .action-btn.highlight {
       background: var(--color-primary);
       border-color: var(--color-primary);
-      box-shadow: 0 8px 24px rgba(233, 69, 96, 0.4);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(30, 99, 219, 0.3);
+    }
+
+    .action-btn.highlight:hover {
+      box-shadow: 0 6px 20px rgba(30, 99, 219, 0.4);
+      transform: translateY(-2px);
     }
 
     .action-item:active .action-btn {
-      transform: scale(0.92);
+      transform: scale(0.95);
     }
 
     .action-item span {
-      font-size: 12px;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.7);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      text-align: center;
     }
   `]
 })

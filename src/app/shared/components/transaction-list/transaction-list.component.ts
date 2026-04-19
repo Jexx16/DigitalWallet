@@ -33,7 +33,7 @@ import { Transaction } from '../../../models/transaction.model';
   `,
   styles: [`
     .transaction-list {
-      padding: 0 4px;
+      padding: 0;
     }
 
     .list-header {
@@ -41,38 +41,44 @@ import { Transaction } from '../../../models/transaction.model';
       justify-content: space-between;
       align-items: center;
       margin-bottom: 16px;
+      padding: 0 0 12px;
+      border-bottom: 1px solid var(--color-border);
     }
 
     .list-title {
       font-size: 18px;
       font-weight: 700;
-      color: var(--color-text);
+      color: var(--color-text-primary);
       margin: 0;
+      letter-spacing: -0.01em;
     }
 
     .list-count {
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.5);
-      background: rgba(255, 255, 255, 0.08);
-      padding: 4px 10px;
+      color: var(--color-text-tertiary);
+      background: var(--color-bg-secondary);
+      padding: 6px 12px;
       border-radius: 20px;
+      font-weight: 600;
     }
 
     .empty-state {
       text-align: center;
-      padding: 40px 20px;
-      color: rgba(255, 255, 255, 0.4);
+      padding: 48px 20px;
+      color: var(--color-text-tertiary);
     }
 
     .empty-icon {
-      font-size: 48px;
+      font-size: 56px;
       margin-bottom: 12px;
-      opacity: 0.4;
+      color: var(--color-text-tertiary);
     }
 
     .empty-state p {
-      font-size: 14px;
+      font-size: 15px;
       margin: 0;
+      color: var(--color-text-secondary);
+      font-weight: 500;
     }
   `]
 })

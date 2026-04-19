@@ -27,15 +27,20 @@ import { Component, Input } from '@angular/core';
   styles: [`
     .balance-container {
       text-align: center;
-      padding: 28px 20px 20px;
+      padding: 32px 24px;
+      background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-bg-secondary) 100%);
+      border-radius: 16px;
+      border: 1px solid var(--color-primary);
+      box-shadow: 0 4px 6px -1px rgba(30, 99, 219, 0.1);
+      margin: 16px;
     }
 
     .balance-label {
       font-size: 13px;
-      color: rgba(255, 255, 255, 0.5);
+      color: var(--color-text-secondary);
       text-transform: uppercase;
       letter-spacing: 2px;
-      font-weight: 500;
+      font-weight: 600;
     }
 
     .balance-amount-row {
@@ -43,33 +48,37 @@ import { Component, Input } from '@angular/core';
       align-items: center;
       justify-content: center;
       gap: 12px;
-      margin-top: 6px;
+      margin-top: 12px;
     }
 
     .balance-amount {
-      font-size: 36px;
+      font-size: 44px;
       font-weight: 800;
-      color: var(--color-text);
+      color: var(--color-primary);
       margin: 0;
-      letter-spacing: -1px;
+      letter-spacing: -1.5px;
     }
 
     .toggle-visibility {
-      font-size: 22px;
-      color: rgba(255, 255, 255, 0.4);
+      font-size: 24px;
+      color: var(--color-text-secondary);
       cursor: pointer;
-      transition: color 0.2s;
-    }
-
-    .toggle-visibility:hover {
-      color: var(--color-primary);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 8px;
+      border-radius: 8px;
+      
+      &:hover {
+        color: var(--color-primary);
+        background: rgba(30, 99, 219, 0.1);
+      }
     }
 
     .balance-subtitle {
       display: block;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.4);
-      margin-top: 4px;
+      font-size: 13px;
+      color: var(--color-success);
+      margin-top: 8px;
+      font-weight: 600;
     }
   `]
 })

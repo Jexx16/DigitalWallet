@@ -5,7 +5,7 @@ import { Card } from '../../../models/card.model';
   selector: 'app-card',
   standalone: false,
   template: `
-    <div class="wallet-card card-glass" [style.background]="getCardGradient()">
+    <div class="wallet-card" [style.background]="getCardGradient()">
       <div class="card-top">
         <div class="card-chip">
           <div class="chip-line"></div>
@@ -56,9 +56,9 @@ import { Card } from '../../../models/card.model';
       justify-content: space-between;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      border: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .wallet-card::before {
@@ -68,7 +68,7 @@ import { Card } from '../../../models/card.model';
       right: -50%;
       width: 100%;
       height: 100%;
-      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
       pointer-events: none;
     }
 
@@ -79,42 +79,48 @@ import { Card } from '../../../models/card.model';
     }
 
     .card-chip {
-      width: 40px;
-      height: 30px;
-      background: linear-gradient(135deg, #ffd700, #ffaa00);
-      border-radius: 6px;
+      width: 45px;
+      height: 35px;
+      background: linear-gradient(135deg, #FFD700, #FFC700);
+      border-radius: 8px;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 3px 5px;
+      padding: 4px 6px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
 
     .chip-line {
       height: 2px;
-      background: rgba(0,0,0,0.2);
-      margin: 1px 0;
+      background: rgba(0, 0, 0, 0.15);
+      margin: 2px 0;
       border-radius: 1px;
     }
 
+    .card-franchise {
+      display: flex;
+      align-items: center;
+    }
+
     .franchise-logo {
-      height: 28px;
+      height: 32px;
       filter: brightness(0) invert(1);
     }
 
     .franchise-icon {
-      font-size: 32px;
-      color: rgba(255, 255, 255, 0.8);
+      font-size: 36px;
+      color: rgba(255, 255, 255, 0.9);
     }
 
     .card-number {
       font-size: 18px;
       letter-spacing: 3px;
-      color: var(--color-text);
+      color: #ffffff;
       font-weight: 500;
     }
 
     .masked {
-      opacity: 0.6;
+      opacity: 0.65;
       margin-right: 8px;
     }
 
@@ -130,18 +136,19 @@ import { Card } from '../../../models/card.model';
 
     .card-label {
       display: block;
-      font-size: 9px;
+      font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 1.5px;
-      opacity: 0.6;
-      color: var(--color-text);
-      margin-bottom: 2px;
+      opacity: 0.7;
+      color: #ffffff;
+      margin-bottom: 4px;
+      font-weight: 600;
     }
 
     .card-value {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--color-text);
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
       letter-spacing: 0.5px;
     }
   `]
@@ -151,9 +158,9 @@ export class CardComponent {
 
   getCardGradient(): string {
     if (this.card?.color) {
-      return `linear-gradient(135deg, ${this.card.color}, ${this.adjustColor(this.card.color, -40)})`;
+      return `linear-gradient(135deg, ${this.card.color}, ${this.adjustColor(this.card.color, -35)})`;
     }
-    return 'linear-gradient(135deg, var(--color-bg-card), var(--color-bg-mid))';
+    return 'linear-gradient(135deg, #1e63db, #1550b8)';
   }
 
   private adjustColor(hex: string, amount: number): string {

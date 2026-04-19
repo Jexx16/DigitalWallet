@@ -6,7 +6,7 @@ import { Transaction } from '../../../models/transaction.model';
   selector: 'app-transaction-item',
   standalone: false,
   template: `
-    <div class="transaction-item card-glass"
+    <div class="transaction-item"
          (mousedown)="onPressStart()"
          (mouseup)="onPressEnd()"
          (mouseleave)="onPressEnd()"
@@ -38,35 +38,41 @@ import { Transaction } from '../../../models/transaction.model';
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 14px 16px;
-      margin-bottom: 8px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      transition: transform 0.2s ease, background 0.2s ease;
+      padding: 16px;
+      margin-bottom: 10px;
+      border-radius: 12px;
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
     }
 
     .transaction-item:active {
       transform: scale(0.98);
-      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .transaction-item:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border-color: var(--color-primary);
     }
 
     .tx-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
     }
 
     .tx-emoji {
       font-size: 28px;
-      width: 44px;
-      height: 44px;
+      width: 48px;
+      height: 48px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--color-bg-tertiary);
       border-radius: 12px;
+      border: 1px solid var(--color-border);
     }
 
     .tx-info {
@@ -75,45 +81,54 @@ import { Transaction } from '../../../models/transaction.model';
     }
 
     .tx-merchant {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 600;
-      color: var(--color-text);
+      color: var(--color-text-primary);
     }
 
     .tx-date {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.5);
-      margin-top: 2px;
+      font-size: 12px;
+      color: var(--color-text-tertiary);
+      margin-top: 4px;
     }
 
     .tx-right {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .tx-amount {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--color-primary);
+      text-align: right;
     }
 
     .tx-amount.failed {
-      color: #ff4757;
-      font-size: 12px;
+      color: var(--color-error);
+      font-size: 13px;
     }
 
     .tx-status {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 700;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
     }
 
     .tx-status.success {
-      color: #2ed573;
+      color: var(--color-success);
+      background: rgba(16, 185, 129, 0.1);
     }
 
     .tx-status.fail {
-      color: #ff4757;
+      color: var(--color-error);
+      background: rgba(239, 68, 68, 0.1);
     }
   `]
 })
@@ -134,6 +149,13 @@ export class TransactionItemComponent {
     this.clearLongPressTimer();
   }
 
+  private clearLongPressTimer(): void {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+  }
+
   getDefaultEmoji(): string {
     return '💳';
   }
@@ -152,12 +174,5 @@ export class TransactionItemComponent {
       currency: 'COP',
       minimumFractionDigits: 0
     }).format(amount);
-  }
-
-  private clearLongPressTimer(): void {
-    if (this.longPressTimer) {
-      clearTimeout(this.longPressTimer);
-      this.longPressTimer = null;
-    }
   }
 }

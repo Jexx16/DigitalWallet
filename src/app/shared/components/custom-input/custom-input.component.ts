@@ -31,41 +31,43 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   `,
   styles: [`
     .custom-input-wrapper {
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
     .custom-input-label {
       display: block;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
-      color: var(--color-text);
-      margin-bottom: 6px;
-      opacity: 0.8;
+      color: var(--color-text-primary);
+      margin-bottom: 8px;
     }
 
     .input-container {
       display: flex;
       align-items: center;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
+      background: var(--color-bg-secondary);
+      border: 2px solid var(--color-border);
+      border-radius: 8px;
       padding: 0 14px;
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      height: 48px;
     }
 
     .has-focus .input-container {
       border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.15);
+      box-shadow: 0 0 0 3px var(--color-primary-light);
     }
 
     .has-error .input-container {
-      border-color: #ff4757;
+      border-color: var(--color-error);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
     }
 
     .input-icon {
-      color: rgba(255, 255, 255, 0.4);
+      color: var(--color-text-tertiary);
       font-size: 18px;
       margin-right: 10px;
+      flex-shrink: 0;
     }
 
     .custom-input {
@@ -73,28 +75,41 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
       background: transparent;
       border: none;
       outline: none;
-      color: var(--color-text);
+      color: var(--color-text-primary);
       font-size: 15px;
-      padding: 14px 0;
+      padding: 0;
       font-family: var(--ion-font-family);
+      font-weight: 500;
     }
 
     .custom-input::placeholder {
-      color: rgba(255, 255, 255, 0.3);
+      color: var(--color-text-tertiary);
+    }
+
+    .custom-input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .toggle-password {
-      color: rgba(255, 255, 255, 0.4);
+      color: var(--color-text-tertiary);
       font-size: 20px;
       cursor: pointer;
+      flex-shrink: 0;
+      transition: color 0.2s ease;
+      
+      &:hover {
+        color: var(--color-text-secondary);
+      }
     }
 
     .error-message {
       display: block;
-      color: #ff4757;
+      color: var(--color-error);
       font-size: 12px;
-      margin-top: 4px;
+      margin-top: 6px;
       padding-left: 4px;
+      font-weight: 500;
     }
   `],
   providers: [
@@ -154,6 +169,5 @@ export class CustomInputComponent implements ControlValueAccessor {
 
   togglePassword(): void {
     this.showPassword = !this.showPassword;
-    this.type = this.showPassword ? 'text' : 'password';
   }
 }
