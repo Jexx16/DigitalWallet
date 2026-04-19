@@ -1,0 +1,43 @@
+.add-card-content {
+  --background: var(--color-bg-dark);
+}
+
+.preview-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 18px;
+  perspective: 1200px;
+}
+
+.card-form {
+  padding: 18px;
+}
+
+.franchise-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.color-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.color-row label {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+}
+
+.color-row input {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  padding: 0;
+}

@@ -1,0 +1,66 @@
+<ion-content [fullscreen]="true" class="login-content ion-padding">
+  <div class="auth-shell">
+    <div class="brand-block">
+      <h1>MyDigitalWallet</h1>
+      <p>Tu billetera digital segura</p>
+    </div>
+
+    <form class="auth-form card-glass" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <app-custom-input
+        label="Correo electrónico"
+        placeholder="correo@ejemplo.com"
+        type="email"
+        icon="mail-outline"
+        formControlName="email"
+        [showError]="controlHasError('email', 'required') || controlHasError('email', 'email')"
+        [errorMessage]="controlHasError('email', 'required') ? 'El correo es obligatorio' : 'Ingresa un correo válido'">
+      </app-custom-input>
+
+      <app-custom-input
+        label="Contraseña"
+        placeholder="Tu contraseña"
+        type="password"
+        icon="lock-closed-outline"
+        formControlName="password"
+        [showError]="controlHasError('password', 'required') || controlHasError('password', 'minlength')"
+        [errorMessage]="controlHasError('password', 'required') ? 'La contraseña es obligatoria' : 'Mínimo 6 caracteres'">
+      </app-custom-input>
+
+      <ion-button
+        expand="block"
+        type="submit"
+        class="primary-btn"
+        [disabled]="submitting">
+        Ingresar
+      </ion-button>
+
+      <ion-button
+        *ngIf="biometricQuickAccess"
+        expand="block"
+        type="button"
+        fill="outline"
+        class="secondary-btn"
+        [disabled]="submitting"
+        (click)="loginWithBiometric()">
+        <ion-icon slot="start" name="finger-print-outline"></ion-icon>
+        Ingreso biométrico
+      </ion-button>
+
+      <ion-button
+        expand="block"
+        type="button"
+        fill="clear"
+        class="google-btn"
+        [disabled]="submitting"
+        (click)="loginWithGoogle()">
+        <ion-icon slot="start" name="logo-google"></ion-icon>
+        Ingresar con Google
+      </ion-button>
+    </form>
+
+    <p class="switch-auth">
+      ¿No tienes cuenta?
+      <button type="button" (click)="goToRegister()">Regístrate</button>
+    </p>
+  </div>
+</ion-content>

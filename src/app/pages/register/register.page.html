@@ -1,0 +1,94 @@
+<ion-content [fullscreen]="true" class="register-content ion-padding">
+  <div class="register-shell">
+    <div class="header">
+      <h1>Crear cuenta</h1>
+      <p>Completa tus datos para activar tu billetera</p>
+    </div>
+
+    <form class="register-form card-glass" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <app-custom-input
+        label="Nombre"
+        placeholder="Tu nombre"
+        icon="person-outline"
+        formControlName="nombre"
+        [showError]="controlHasError('nombre', 'required')"
+        errorMessage="El nombre es obligatorio">
+      </app-custom-input>
+
+      <app-custom-input
+        label="Apellido"
+        placeholder="Tu apellido"
+        icon="person-outline"
+        formControlName="apellido"
+        [showError]="controlHasError('apellido', 'required')"
+        errorMessage="El apellido es obligatorio">
+      </app-custom-input>
+
+      <div class="field-block">
+        <label>Tipo de documento</label>
+        <ion-item lines="none" class="select-item">
+          <ion-select formControlName="tipoDocumento" placeholder="Selecciona uno">
+            <ion-select-option *ngFor="let type of documentTypes" [value]="type">{{ type }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <span class="inline-error" *ngIf="controlHasError('tipoDocumento', 'required')">Este campo es obligatorio</span>
+      </div>
+
+      <app-custom-input
+        label="Número de documento"
+        placeholder="Ej. 12345678"
+        icon="card-outline"
+        formControlName="numeroDocumento"
+        [showError]="controlHasError('numeroDocumento', 'required')"
+        errorMessage="El documento es obligatorio">
+      </app-custom-input>
+
+      <div class="field-block">
+        <label>País</label>
+        <ion-item lines="none" class="select-item">
+          <ion-select formControlName="pais" placeholder="Selecciona tu país">
+            <ion-select-option *ngFor="let country of countries" [value]="country">{{ country }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <span class="inline-error" *ngIf="controlHasError('pais', 'required')">Este campo es obligatorio</span>
+      </div>
+
+      <app-custom-input
+        label="Correo electrónico"
+        placeholder="correo@ejemplo.com"
+        type="email"
+        icon="mail-outline"
+        formControlName="email"
+        [showError]="controlHasError('email', 'required') || controlHasError('email', 'email')"
+        [errorMessage]="controlHasError('email', 'required') ? 'El correo es obligatorio' : 'Ingresa un correo válido'">
+      </app-custom-input>
+
+      <app-custom-input
+        label="Contraseña"
+        placeholder="Mínimo 6 caracteres"
+        type="password"
+        icon="lock-closed-outline"
+        formControlName="password"
+        [showError]="controlHasError('password', 'required') || controlHasError('password', 'minlength')"
+        [errorMessage]="controlHasError('password', 'required') ? 'La contraseña es obligatoria' : 'Mínimo 6 caracteres'">
+      </app-custom-input>
+
+      <app-custom-input
+        label="Confirmar contraseña"
+        placeholder="Repite tu contraseña"
+        type="password"
+        icon="shield-checkmark-outline"
+        formControlName="confirmPassword"
+        [showError]="controlHasError('confirmPassword', 'required') || hasPasswordMismatch()"
+        [errorMessage]="controlHasError('confirmPassword', 'required') ? 'Debes confirmar la contraseña' : 'Las contraseñas no coinciden'">
+      </app-custom-input>
+
+      <ion-button expand="block" type="submit" [disabled]="submitting">Registrarme</ion-button>
+    </form>
+
+    <p class="switch-auth">
+      ¿Ya tienes cuenta?
+      <button type="button" (click)="goToLogin()">Inicia sesión</button>
+    </p>
+  </div>
+</ion-content>

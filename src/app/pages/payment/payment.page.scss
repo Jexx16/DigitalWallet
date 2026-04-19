@@ -1,0 +1,59 @@
+.payment-content {
+  --background: var(--color-bg-dark);
+}
+
+.payment-shell h2 {
+  margin: 0 0 12px;
+  color: var(--color-text);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.cards-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 14px;
+}
+
+.card-select {
+  border: none;
+  background: transparent;
+  padding: 0;
+  opacity: 0.75;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.card-select.active {
+  opacity: 1;
+  transform: scale(1.02);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 18px;
+}
+
+.empty-state ion-icon {
+  font-size: 34px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.empty-state p {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.payment-cta {
+  margin-top: 12px;
+  padding: 16px;
+}
+
+.payment-cta p {
+  margin: 0 0 10px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.bio-note {
+  color: var(--color-primary) !important;
+  font-weight: 600;
+}

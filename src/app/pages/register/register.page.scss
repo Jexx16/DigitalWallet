@@ -1,0 +1,72 @@
+.register-content {
+  --background: linear-gradient(180deg, var(--color-bg-mid) 0%, var(--color-bg-dark) 100%);
+}
+
+.register-shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  margin-top: 10px;
+}
+
+.header h1 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.header p {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.register-form {
+  padding: 18px;
+}
+
+.field-block {
+  margin-bottom: 14px;
+}
+
+.field-block label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  opacity: 0.8;
+}
+
+.select-item {
+  --background: rgba(255, 255, 255, 0.06);
+  --color: var(--color-text);
+  --border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.inline-error {
+  display: block;
+  font-size: 12px;
+  color: #ff4757;
+  margin-top: 4px;
+  padding-left: 4px;
+}
+
+.switch-auth {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+
+.switch-auth button {
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-weight: 600;
+}

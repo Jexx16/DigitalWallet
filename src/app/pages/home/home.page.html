@@ -1,0 +1,59 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar color="transparent">
+    <ion-title>Hola, {{ userProfile?.nombre || 'Usuario' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="home-content ion-padding-bottom">
+  <app-balance-display [balance]="balance"></app-balance-display>
+
+  <section class="cards-section">
+    <div class="section-header">
+      <h2>Tus tarjetas</h2>
+    </div>
+    <div class="cards-scroll" *ngIf="!loadingCards && cards.length > 0">
+      <button
+        type="button"
+        class="card-select"
+        *ngFor="let card of cards"
+        [class.active]="card.id === activeCardId"
+        (click)="onCardSelected(card.id)">
+        <app-card [card]="card"></app-card>
+      </button>
+    </div>
+    <div class="empty-block card-glass" *ngIf="!loadingCards && cards.length === 0">
+      <ion-icon name="card-outline"></ion-icon>
+      <p>No tienes tarjetas registradas.</p>
+      <ion-button size="small" (click)="onAction('add')">Agregar tarjeta</ion-button>
+    </div>
+    <app-skeleton-loading *ngIf="loadingCards" [count]="1"></app-skeleton-loading>
+  </section>
+
+  <app-quick-actions (action)="onAction($event)"></app-quick-actions>
+
+  <section id="transaction-section" class="transactions-section ion-padding-horizontal">
+    <app-transaction-list
+      [transactions]="transactions"
+      [loading]="loadingTransactions"
+      title="Últimos movimientos"
+      (transactionLongPress)="onTransactionLongPress($event)">
+    </app-transaction-list>
+  </section>
+
+  <div class="emoji-backdrop" *ngIf="showEmojiPicker" (click)="closeEmojiPicker()"></div>
+  <div class="emoji-picker-container card-glass" *ngIf="showEmojiPicker">
+    <div class="picker-header">
+      <h3>Selecciona un emoji</h3>
+      <ion-button fill="clear" size="small" (click)="closeEmojiPicker()">
+        <ion-icon name="close-outline"></ion-icon>
+      </ion-button>
+    </div>
+    <emoji-mart
+      [showPreview]="false"
+      [emojiTooltip]="true"
+      [isNative]="true"
+      [color]="'var(--color-primary)'"
+      (emojiSelect)="onEmojiSelected($event)">
+    </emoji-mart>
+  </div>
+</ion-content>

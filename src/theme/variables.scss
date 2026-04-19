@@ -1,0 +1,21 @@
+// For information on how to create your own theme, please refer to:
+// https://ionicframework.com/docs/theming/
+
+:root {
+  --color-primary: #e94560;
+  --color-bg-dark: #1a1a2e;
+  --color-bg-mid: #16213e;
+  --color-bg-card: #0f3460;
+  --color-text: #ffffff;
+  --ion-font-family: 'Poppins', sans-serif;
+  --ion-color-primary: var(--color-primary);
+  --ion-background-color: var(--color-bg-dark);
+  --ion-text-color: var(--color-text);
+}
+
+.card-glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+}
