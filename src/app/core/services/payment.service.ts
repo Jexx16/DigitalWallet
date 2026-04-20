@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { FirestoreService } from './firestore.service';
 import { BiometricService } from './biometric.service';
 import { Transaction } from '../../models/transaction.model';
-import { Observable } from 'rxjs';
+import { Observable, catchError, throwError } from 'rxjs';
 import { Timestamp, collection, query, where, orderBy, limit, collectionData, Firestore } from '@angular/fire/firestore';
 
 export interface PaymentRequest {
@@ -150,7 +150,12 @@ export class PaymentService {
       orderBy('date', 'desc'),
       limit(limitCount)
     );
-    return collectionData(q, { idField: 'id' }) as Observable<Transaction[]>;
+    return (collectionData(q, { idField: 'id' }) as Observable<Transaction[]>).pipe(
+      catchError(error => {
+        console.error('Error fetching transactions by card:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   /**
@@ -159,7 +164,12 @@ export class PaymentService {
   getAllTransactions(uid: string, limitCount: number = 50): Observable<Transaction[]> {
     const ref = collection(this.firestore, `users/${uid}/transactions`);
     const q = query(ref, orderBy('date', 'desc'), limit(limitCount));
-    return collectionData(q, { idField: 'id' }) as Observable<Transaction[]>;
+    return (collectionData(q, { idField: 'id' }) as Observable<Transaction[]>).pipe(
+      catchError(error => {
+        console.error('Error fetching all transactions:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   /**
@@ -178,7 +188,12 @@ export class PaymentService {
       where('date', '<=', Timestamp.fromDate(endOfDay)),
       orderBy('date', 'desc')
     );
-    return collectionData(q, { idField: 'id' }) as Observable<Transaction[]>;
+    return (collectionData(q, { idField: 'id' }) as Observable<Transaction[]>).pipe(
+      catchError(error => {
+        console.error('Error fetching transactions by date:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   /**

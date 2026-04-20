@@ -557,13 +557,21 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   private getErrorMessage(error: unknown): string {
-    if (error instanceof Error && error.message) {
-      if (error.message.includes('requires an index')) {
-        return 'Falta un índice de Firestore para cargar movimientos por tarjeta. Revisa la consola y crea el índice sugerido.';
-      }
-      return error.message;
+    const msg = (error instanceof Error && error.message) ? error.message : String(error);
+    
+    if (msg.includes('requires an index') || msg.includes('FAILED_PRECONDITION')) {
+      return '⚠️ Error: Falta un índice en Firestore para filtrar movimientos. Crea el índice en tu consola de Firebase para activar esta función.';
     }
-    return 'Ocurrió un error inesperado.';
+
+    if (msg.includes('permission-denied')) {
+      return '🚫 No tienes permiso para realizar esta operación.';
+    }
+
+    if (msg.includes('not-found')) {
+      return '🔍 El recurso solicitado no fue encontrado.';
+    }
+
+    return msg || 'Ocurrió un error inesperado.';
   }
 
   private async deleteActiveCard(card: Card): Promise<void> {
