@@ -1,9 +1,24 @@
 import { Injectable } from '@angular/core';
 import { FirestoreService } from './firestore.service';
+import { BiometricService } from './biometric.service';
 import { Transaction } from '../../models/transaction.model';
 import { Observable } from 'rxjs';
 import { Timestamp, collection, query, where, orderBy, limit, collectionData, Firestore } from '@angular/fire/firestore';
-import { NativeBiometric } from 'capacitor-native-biometric';
+
+export interface PaymentRequest {
+  cardId: string;
+  merchant: string;
+  amount: number;
+  description?: string;
+  category?: string;
+}
+
+export interface PaymentResult {
+  success: boolean;
+  transactionId?: string;
+  error?: string;
+  timestamp: Date;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -12,30 +27,119 @@ export class PaymentService {
 
   constructor(
     private firestoreService: FirestoreService,
+    private biometricService: BiometricService,
     private firestore: Firestore
   ) {}
 
   /**
-   * Registra una transacción exitosa en Firestore
+   * Procesa un pago con validación biométrica completa
+   * 
+   * @param uid - ID del usuario
+   * @param paymentRequest - Datos del pago
+   * @param biometricEnabled - Si la biometría está habilitada para este usuario
+   * @param requireBiometric - Forzar validación biométrica incluso si no está habilitada
+   * @returns Resultado del pago
    */
   async processPayment(
     uid: string,
-    transactionData: Omit<Transaction, 'id' | 'date' | 'status'>,
-    biometricEnabled: boolean = false
-  ): Promise<void> {
-    if (biometricEnabled) {
-      await NativeBiometric.verifyIdentity({
-        reason: 'Confirma este pago',
-        title: 'Pago seguro'
-      });
+    paymentRequest: PaymentRequest,
+    biometricEnabled: boolean = false,
+    requireBiometric: boolean = true
+  ): Promise<PaymentResult> {
+    try {
+      // Validar que el dispositivo tenga biometría si es requerida
+      if (requireBiometric || biometricEnabled) {
+        if (!this.biometricService.isNativeDevice()) {
+          throw new Error('La biometría solo está disponible en dispositivos nativos');
+        }
+
+        // Validar disponibilidad de biometría
+        const availability = await this.biometricService.checkBiometricAvailability();
+        if (!availability.isAvailable) {
+          throw new Error('La biometría no está disponible en este dispositivo');
+        }
+
+        // Realizar validación biométrica segura para pagos
+        await this.biometricService.performSecurePaymentValidation(
+          paymentRequest.amount,
+          paymentRequest.merchant
+        );
+      }
+
+      // Crear registro de transacción
+      const transaction: Omit<Transaction, 'id'> = {
+        cardId: paymentRequest.cardId,
+        merchant: paymentRequest.merchant,
+        amount: paymentRequest.amount,
+        description: paymentRequest.description || '',
+        category: paymentRequest.category,
+        date: Timestamp.now(),
+        status: 'success',
+        emoji: ''
+      };
+
+      // Guardar en Firestore
+      const docRef = await this.firestoreService.addDocument(
+        `users/${uid}/transactions`,
+        transaction
+      );
+
+      return {
+        success: true,
+        transactionId: docRef.id,
+        timestamp: new Date()
+      };
+
+    } catch (error: any) {
+      console.error('Error procesando pago:', error);
+      return {
+        success: false,
+        error: error?.message || 'Error procesando el pago',
+        timestamp: new Date()
+      };
+    }
+  }
+
+  /**
+   * Valida un pago antes de procesarlo
+   * 
+   * @param paymentRequest - Datos del pago a validar
+   * @returns Validación correcta o error
+   */
+  async validatePayment(paymentRequest: PaymentRequest): Promise<{ valid: boolean; error?: string }> {
+    // Validar monto
+    if (!paymentRequest.amount || paymentRequest.amount <= 0) {
+      return { valid: false, error: 'El monto debe ser mayor a 0' };
     }
 
-    const tx: Omit<Transaction, 'id'> = {
-      ...transactionData,
-      date: Timestamp.now(),
-      status: 'success'
-    };
-    await this.firestoreService.addDocument(`users/${uid}/transactions`, tx);
+    // Validar tarjeta
+    if (!paymentRequest.cardId || paymentRequest.cardId.trim() === '') {
+      return { valid: false, error: 'Debe seleccionar una tarjeta' };
+    }
+
+    // Validar comercio
+    if (!paymentRequest.merchant || paymentRequest.merchant.trim() === '') {
+      return { valid: false, error: 'Comercio inválido' };
+    }
+
+    // Validación de monto máximo (opcional)
+    const MAX_PAYMENT = 10000000; // $10M COP
+    if (paymentRequest.amount > MAX_PAYMENT) {
+      return { valid: false, error: `Monto máximo permitido: $${MAX_PAYMENT.toLocaleString()}` };
+    }
+
+    return { valid: true };
+  }
+
+  /**
+   * Simula un pago con biometría (para desarrollo/testing)
+   */
+  async simulatePaymentWithBiometric(
+    uid: string,
+    paymentRequest: PaymentRequest,
+    biometricEnabled: boolean = false
+  ): Promise<PaymentResult> {
+    return this.processPayment(uid, paymentRequest, biometricEnabled, true);
   }
 
   /**

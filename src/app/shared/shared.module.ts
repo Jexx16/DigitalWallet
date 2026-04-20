@@ -12,6 +12,7 @@ import { CustomInputComponent } from './components/custom-input/custom-input.com
 import { PaymentSimulatorComponent } from './components/payment-simulator/payment-simulator.component';
 import { SkeletonLoadingComponent } from './components/skeleton-loading/skeleton-loading.component';
 import { CalendarComponent } from './components/calendar/calendar.component';
+import { PaymentConfirmationComponent } from './components/payment-confirmation/payment-confirmation.component';
 
 @NgModule({
   declarations: [
@@ -23,7 +24,8 @@ import { CalendarComponent } from './components/calendar/calendar.component';
     CustomInputComponent,
     PaymentSimulatorComponent,
     SkeletonLoadingComponent,
-    CalendarComponent
+    CalendarComponent,
+    PaymentConfirmationComponent
   ],
   imports: [
     CommonModule,
@@ -40,7 +42,8 @@ import { CalendarComponent } from './components/calendar/calendar.component';
     CustomInputComponent,
     PaymentSimulatorComponent,
     SkeletonLoadingComponent,
-    CalendarComponent
+    CalendarComponent,
+    PaymentConfirmationComponent
   ]
 })
 export class SharedModule {}

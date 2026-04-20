@@ -8,4 +8,6 @@ export interface Transaction {
   date: Timestamp;
   emoji?: string;
   status: 'success' | 'failed';
+  description?: string;
+  category?: string;
 }
