@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "846105138000",
+    "project_id": "digitalwallet-eb287",
+    "storage_bucket": "digitalwallet-eb287.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:846105138000:android:19e8f7bb7b6a9bf13bd255",
+        "android_client_info": {
+          "package_name": "com.mydigitalwallet.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "846105138000-oseuj2fa6to5i7g1vahjfl56crknqrm7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mydigitalwallet.app",
+            "certificate_hash": "6876e07cb04af4953b8b975de63940cf9c6bbc36"
+          }
+        },
+        {
+          "client_id": "846105138000-8mabfc3e74g2boq2ccocngt69ira3cj1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAW3ahPwDnfw7WDTMXndOzByeQfKMa4XcU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "846105138000-8mabfc3e74g2boq2ccocngt69ira3cj1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

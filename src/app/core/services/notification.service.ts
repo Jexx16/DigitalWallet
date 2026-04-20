@@ -84,17 +84,23 @@ export class NotificationService {
 
       // 2️⃣ Agregar listeners ANTES de registrarse
       // Listener para registro exitoso
-      this.registrationListener = await PushNotifications.addListener('registration', async (token) => {
+      this.registrationListener = await PushNotifications.addListener('registration', (token) => {
         try {
           // Validar que el token no sea null o vacío
           if (!token.value) {
-            throw new Error('Token FCM vacío o nulo.');
+            console.error('Token FCM vacío o nulo.');
+            return;
           }
           console.log('FCM Token recibido:', token.value.substring(0, 20) + '...');
-          await this.userService.updateFcmToken(uid, token.value);
+          
+          // NO usar await en el callback del listener para evitar congelamientos
+          // El guardado del token es asincrónico pero no bloqueante
+          this.userService.updateFcmToken(uid, token.value).catch((error) => {
+            console.error('Error al guardar FCM token:', error);
+            // No mostrar toast aquí, solo loguear
+          });
         } catch (error) {
-          console.error('Error al guardar FCM token:', error);
-          await this.toastService.showError(this.getErrorMessage(error));
+          console.error('Error en registration listener:', error);
         }
       });
 
@@ -104,8 +110,12 @@ export class NotificationService {
           const title = notification.title || 'Nueva notificación';
           const body = notification.body || 'Tienes una nueva notificación push.';
           this.pushNotificationSummary(title, body, 'push');
-          void this.toastService.show(title);
           console.log('Push notification received in foreground:', title);
+          
+          // NO usar await en el callback del listener
+          this.toastService.show(title).catch((error) => {
+            console.error('Error al mostrar toast:', error);
+          });
         } catch (error) {
           console.error('Error al procesar notificación recibida:', error);
         }
@@ -121,7 +131,7 @@ export class NotificationService {
             `No se pudo registrar push: ${errorMsg}`,
             'system'
           );
-          void this.toastService.showError(`Error registrando notificaciones: ${errorMsg}`);
+          // Solo loguear, no hacer toast
         } catch (err) {
           console.error('Error manejando registration error listener:', err);
         }
@@ -153,6 +163,7 @@ export class NotificationService {
   /**
    * Envía una notificación push al dispositivo del usuario
    * Valida token FCM antes de enviar
+   * NO bloquea si falla - es completamente asincrónico
    */
   async sendPush(fcmToken: string, title: string, body: string): Promise<void> {
     try {
@@ -164,26 +175,36 @@ export class NotificationService {
 
       // Validar FCM token no sea null, undefined o vacío
       if (!fcmToken || fcmToken.trim() === '') {
-        throw new Error('FCM token no disponible o inválido para enviar notificación.');
+        console.warn('FCM token no disponible para enviar notificación.');
+        return; // No es un error crítico, solo log
       }
 
       // Validar título y cuerpo
       if (!title || !body) {
-        throw new Error('Título y cuerpo son requeridos para enviar notificación.');
+        console.warn('Título y cuerpo son requeridos para enviar notificación.');
+        return;
       }
 
       // Obtener JWT si no lo tenemos
       if (!this.jwtToken) {
-        this.jwtToken = await this.httpService.loginNotificationService(
-          environment.notificationServiceEmail,
-          environment.notificationServicePassword
-        );
+        try {
+          this.jwtToken = await this.httpService.loginNotificationService(
+            environment.notificationServiceEmail,
+            environment.notificationServicePassword
+          );
+        } catch (authError) {
+          console.warn('No se pudo autenticar con servicio de notificaciones:', authError);
+          // No es bloqueante - continuamos sin enviar push
+          return;
+        }
       }
 
       if (!this.jwtToken) {
-        throw new Error('No se pudo obtener JWT para enviar notificación.');
+        console.warn('JWT no disponible para enviar notificación.');
+        return;
       }
 
+      // Intentar enviar la notificación
       await this.httpService.sendPushNotification(
         this.jwtToken,
         fcmToken,
@@ -194,10 +215,10 @@ export class NotificationService {
       this.pushNotificationSummary(title, body, 'payment');
       console.log('Push notification sent successfully.');
     } catch (error) {
-      console.error('Error al enviar notificación push:', error);
-      await this.toastService.showError(this.getErrorMessage(error));
-      // Reintentar con nuevo token en próximo intento
+      console.warn('Error al enviar notificación push (no bloqueante):', error);
+      // Reset del token para reintentar en próxima oportunidad
       this.jwtToken = null;
+      // No mostramos error al usuario - la notificación es un bonus, no crítica
     }
   }
 
