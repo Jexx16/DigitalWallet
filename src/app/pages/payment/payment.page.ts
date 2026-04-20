@@ -173,6 +173,8 @@ export class PaymentPage implements OnInit, OnDestroy {
     this.processing = true;
     await this.loadingService.show('Procesando pago...');
     try {
+      console.log(`[Payment] Iniciando pago: $${result.amount} en ${result.merchant}`);
+      
       const paymentResult = await this.paymentService.processPayment(this.uid, {
         cardId: this.selectedCard.id,
         merchant: result.merchant,
@@ -181,23 +183,45 @@ export class PaymentPage implements OnInit, OnDestroy {
 
       // Verificar si el pago fue exitoso
       if (!paymentResult.success) {
-        throw new Error(paymentResult.error || 'Error al procesar el pago');
+        const errorMsg = paymentResult.error || 'Error al procesar el pago';
+        console.error(`[Payment] Error: ${errorMsg}`);
+        throw new Error(errorMsg);
       }
 
+      console.log(`[Payment] ✅ Pago exitoso. ID: ${paymentResult.transactionId}`);
+      
+      // Feedback háptico de éxito
       await Haptics.impact({ style: ImpactStyle.Medium });
 
+      // Enviar notificación push si está disponible
       if (this.userProfile?.fcmToken) {
-        await this.notificationService.sendPush(
-          this.userProfile.fcmToken,
-          'Pago Exitoso',
-          `Pago por ${this.formatCurrency(result.amount)} en ${result.merchant}`
-        );
+        try {
+          await this.notificationService.sendPush(
+            this.userProfile.fcmToken,
+            '✅ Pago Exitoso',
+            `$${this.formatCurrency(result.amount)} pagado en ${result.merchant}`
+          );
+        } catch (notifError) {
+          console.warn('[Payment] No se pudo enviar notificación push:', notifError);
+          // No es crítico si falla la notificación
+        }
       }
 
-      await this.toastService.showSuccess('Pago realizado con éxito');
-      await this.router.navigate(['/home']);
+      // Mostrar confirmación al usuario
+      await this.toastService.showSuccess(
+        `Pago de $${this.formatCurrency(result.amount)} confirmado ✓`
+      );
+      
+      // Navegar al home después de un pequeño delay para que vea el mensaje
+      setTimeout(() => {
+        void this.router.navigate(['/home']);
+      }, 500);
     } catch (error) {
-      await this.toastService.showError(this.getErrorMessage(error));
+      console.error('[Payment] Error en confirmPayment:', error);
+      
+      // Diferenciar tipos de errores
+      const errorMsg = this.getDetailedErrorMessage(error);
+      await this.toastService.showError(errorMsg);
     } finally {
       this.processing = false;
       await this.loadingService.hide();
@@ -212,11 +236,34 @@ export class PaymentPage implements OnInit, OnDestroy {
     }).format(amount);
   }
 
+  private getDetailedErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+      const msg = error.message.toLowerCase();
+      
+      // Errores de biometría
+      if (msg.includes('biometric') || msg.includes('fingerprint') || msg.includes('face')) {
+        return '🔐 La biometría fue rechazada o cancelada. Por favor intenta nuevamente.';
+      }
+      
+      // Errores de permiso
+      if (msg.includes('permission')) {
+        return '🚫 No tienes permiso para realizar esta operación.';
+      }
+      
+      // Error genérico del usuario
+      if (error.message) {
+        return error.message;
+      }
+    }
+    
+    return '❌ No fue posible completar el pago. Intenta nuevamente.';
+  }
+
   private getErrorMessage(error: unknown): string {
     if (error instanceof Error && error.message) {
       return error.message;
     }
-    return 'No fue posible completar el pago.';
+    return 'Ocurrió un error inesperado.';
   }
 }
 

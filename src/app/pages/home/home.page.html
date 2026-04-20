@@ -13,7 +13,45 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" class="home-content ion-padding-bottom">
-  <app-balance-display [balance]="balance"></app-balance-display>
+  <!-- Resumen de gastos del mes actual -->
+  <section class="monthly-summary card-glass ion-margin-horizontal ion-margin-top">
+    <div class="summary-header">
+      <h3>📊 Resumen del mes</h3>
+    </div>
+    
+    <div *ngIf="!loadingStats" class="summary-stats">
+      <div class="stat-item">
+        <span class="stat-label">💸 Total gastado</span>
+        <span class="stat-value">${{ currentMonthStats.totalSpent | number:'1.0-0' }}</span>
+      </div>
+      
+      <div class="stat-item">
+        <span class="stat-label">🧾 Transacciones</span>
+        <span class="stat-value">{{ currentMonthStats.transactionCount }}</span>
+      </div>
+      
+      <div class="stat-item">
+        <span class="stat-label">📈 Promedio</span>
+        <span class="stat-value">${{ currentMonthStats.averagePerTransaction | number:'1.0-0' }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="loadingStats" class="summary-stats">
+      <div class="stat-item">
+        <ion-skeleton-text animated style="width: 100%; height: 50px;"></ion-skeleton-text>
+      </div>
+      <div class="stat-item">
+        <ion-skeleton-text animated style="width: 100%; height: 50px;"></ion-skeleton-text>
+      </div>
+      <div class="stat-item">
+        <ion-skeleton-text animated style="width: 100%; height: 50px;"></ion-skeleton-text>
+      </div>
+    </div>
+
+    <div *ngIf="!loadingStats && currentMonthStats.transactionCount === 0" class="summary-empty">
+      <p>Aún no tienes transacciones este mes. ¡Comienza a gastar!</p>
+    </div>
+  </section>
 
   <section class="notifications-summary card-glass ion-margin-horizontal">
     <div class="summary-header">

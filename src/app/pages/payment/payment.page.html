@@ -35,13 +35,16 @@
     <app-skeleton-loading *ngIf="loading" [count]="1"></app-skeleton-loading>
 
     <div class="payment-cta card-glass" *ngIf="selectedCard">
-      <p>Abre el simulador para generar comercio y monto aleatorios.</p>
+      <p>Abre el simulador para generar comercio y monto aleatorios, luego confirma el pago con tu biometría.</p>
       <p class="bio-note" *ngIf="userProfile?.biometricEnabled">
-        Se solicitará biometría antes de confirmar.
+        ✓ Tu dispositivo tiene biometría habilitada para este pago.
+      </p>
+      <p class="bio-note-warning" *ngIf="!userProfile?.biometricEnabled">
+        ⚠️ La biometría está deshabilitada. Se te pedirá confirmación para proceder.
       </p>
       <ion-button expand="block" [disabled]="processing" (click)="openSimulator()">
-        <ion-icon slot="start" name="cash-outline"></ion-icon>
-        Simular y pagar
+        <ion-icon slot="start" name="scan-outline"></ion-icon>
+        {{ processing ? 'Procesando...' : '👉 Confirmar pago' }}
       </ion-button>
     </div>
   </section>

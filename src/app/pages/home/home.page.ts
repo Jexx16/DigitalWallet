@@ -12,6 +12,7 @@ import { NotificationService, NotificationSummary } from '../../core/services/no
 import { PaymentService } from '../../core/services/payment.service';
 import { ToastService } from '../../core/services/toast.service';
 import { UserService } from '../../core/services/user.service';
+import { TransactionStatsService, TransactionStats } from '../../core/services/transaction-stats.service';
 import { Card } from '../../models/card.model';
 import { Transaction } from '../../models/transaction.model';
 import { UserProfile } from '../../models/user.model';
@@ -43,6 +44,16 @@ export class HomePage implements OnInit, OnDestroy {
   editCardExpiryDate = '';
   editCardColor = '#0f3460';
   selectedTransaction: Transaction | null = null;
+  
+  // Estadísticas del mes actual
+  currentMonthStats: TransactionStats = {
+    totalSpent: 0,
+    transactionCount: 0,
+    averagePerTransaction: 0,
+    transactions: []
+  };
+  loadingStats = true;
+  
   private editingCardId: string | null = null;
   private authAccount: User | null = null;
   private profileBootstrapInProgress = false;
@@ -53,6 +64,7 @@ export class HomePage implements OnInit, OnDestroy {
   private cardTransactionsSub?: Subscription;
   private profileSub?: Subscription;
   private notificationsSub?: Subscription;
+  private statsSub?: Subscription;
 
   constructor(
     private authService: AuthService,
@@ -61,6 +73,7 @@ export class HomePage implements OnInit, OnDestroy {
     private biometricService: BiometricService,
     private notificationService: NotificationService,
     private paymentService: PaymentService,
+    private transactionStatsService: TransactionStatsService,
     private toastService: ToastService,
     private alertController: AlertController,
     private router: Router
@@ -76,14 +89,10 @@ export class HomePage implements OnInit, OnDestroy {
     this.cardTransactionsSub?.unsubscribe();
     this.profileSub?.unsubscribe();
     this.notificationsSub?.unsubscribe();
+    this.statsSub?.unsubscribe();
   }
 
-  async onAction(action: 'transfer' | 'pay' | 'add' | 'history'): Promise<void> {
-    if (action === 'transfer') {
-      await this.router.navigate(['/transfer']);
-      return;
-    }
-
+  async onAction(action: 'pay' | 'add' | 'history'): Promise<void> {
     if (action === 'pay') {
       const queryParams = this.activeCardId ? { cardId: this.activeCardId } : {};
       await this.router.navigate(['/payment'], { queryParams });
@@ -437,9 +446,29 @@ export class HomePage implements OnInit, OnDestroy {
       this.subscribeToNotifications();
       this.subscribeToCards();
       this.subscribeToAllTransactions();
+      this.subscribeToCurrentMonthStats();
     } catch (error) {
       await this.toastService.showError(this.getErrorMessage(error));
     }
+  }
+
+  private subscribeToCurrentMonthStats(): void {
+    if (!this.uid) {
+      return;
+    }
+
+    this.loadingStats = true;
+    this.statsSub = this.transactionStatsService.getCurrentMonthStats(this.uid).subscribe({
+      next: (stats) => {
+        this.currentMonthStats = stats;
+        this.loadingStats = false;
+      },
+      error: async (error) => {
+        console.error('Error loading monthly stats:', error);
+        this.loadingStats = false;
+        // No mostrar error del usuario para estadísticas, es opcional
+      }
+    });
   }
 
   private subscribeToProfile(): void {

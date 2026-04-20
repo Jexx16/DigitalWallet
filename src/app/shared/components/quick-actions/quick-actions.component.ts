@@ -5,13 +5,6 @@ import { Component, Output, EventEmitter } from '@angular/core';
   standalone: false,
   template: `
     <div class="quick-actions">
-      <div class="action-item" (click)="onAction('transfer')">
-        <div class="action-btn">
-          <ion-icon name="swap-horizontal-outline"></ion-icon>
-        </div>
-        <span>Transferir</span>
-      </div>
-
       <div class="action-item" (click)="onAction('pay')">
         <div class="action-btn highlight">
           <ion-icon name="scan-outline"></ion-icon>
@@ -97,9 +90,9 @@ import { Component, Output, EventEmitter } from '@angular/core';
   `]
 })
 export class QuickActionsComponent {
-  @Output() action = new EventEmitter<'transfer' | 'pay' | 'add' | 'history'>();
+  @Output() action = new EventEmitter<'pay' | 'add' | 'history'>();
 
-  onAction(type: 'transfer' | 'pay' | 'add' | 'history'): void {
+  onAction(type: 'pay' | 'add' | 'history'): void {
     this.action.emit(type);
   }
 }

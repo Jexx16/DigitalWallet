@@ -8,7 +8,7 @@ import { faker } from '@faker-js/faker';
   template: `
     <ion-header class="ion-no-border">
       <ion-toolbar color="transparent">
-        <ion-title>Simular Pago</ion-title>
+        <ion-title>Confirmar pago</ion-title>
         <ion-buttons slot="end">
           <ion-button (click)="cancel()">
             <ion-icon name="close-outline"></ion-icon>
@@ -33,18 +33,26 @@ import { faker } from '@faker-js/faker';
 
         <div class="payment-details card-glass">
           <div class="detail-row">
-            <span>Método de pago</span>
-            <span class="detail-value">Termina en {{ cardLastFour }}</span>
+            <span>Tarjeta</span>
+            <span class="detail-value">•••• •••• •••• {{ cardLastFour }}</span>
+          </div>
+          <div class="detail-row">
+            <span>Comercio</span>
+            <span class="detail-value">{{ merchantName }}</span>
           </div>
           <div class="detail-row">
             <span>Fecha</span>
-            <span class="detail-value">Hoy</span>
+            <span class="detail-value">{{ getCurrentDate() }}</span>
+          </div>
+          <div class="detail-row">
+            <span>Estado</span>
+            <span class="detail-value detail-success">Pendiente de biometría</span>
           </div>
         </div>
 
         <button class="confirm-btn block-btn" (click)="confirm()">
           <ion-icon name="finger-print-outline"></ion-icon>
-          Pagar usando Biometría
+          Autorizar con biometría
         </button>
         
         <button class="generate-btn" (click)="generateNewRandomData()">
@@ -136,6 +144,10 @@ import { faker } from '@faker-js/faker';
       color: var(--color-text);
     }
 
+    .detail-success {
+      color: var(--color-success) !important;
+    }
+
     .confirm-btn {
       width: 100%;
       background: var(--color-primary);
@@ -182,21 +194,27 @@ export class PaymentSimulatorComponent implements OnInit {
     this.generateNewRandomData();
   }
 
-  generateNewRandomData() {
-    // Usar FakerJS para generar comercio y monto aleatorio según el plan
+  generateNewRandomData(): void {
     this.merchantName = faker.company.name();
     this.merchantCategory = faker.commerce.department();
-    
-    // Monto entre 5.000 y 500.000
     const rawAmount = faker.finance.amount({ min: 5000, max: 500000, dec: 0 });
     this.amount = parseInt(rawAmount, 10);
   }
 
-  cancel() {
+  getCurrentDate(): string {
+    return new Date().toLocaleDateString('es-CO', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  }
+
+  cancel(): void {
     this.modalController.dismiss(null, 'cancel');
   }
 
-  confirm() {
+  confirm(): void {
     this.modalController.dismiss({
       merchant: this.merchantName,
       amount: this.amount
