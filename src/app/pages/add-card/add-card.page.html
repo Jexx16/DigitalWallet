@@ -18,8 +18,8 @@
       placeholder="1234 5678 9012 3456"
       icon="card-outline"
       formControlName="cardNumber"
-      [showError]="controlHasError('cardNumber', 'required') || luhnErrorVisible"
-      [errorMessage]="controlHasError('cardNumber', 'required') ? 'Ingresa el número de tarjeta' : 'Número inválido por Luhn'">
+      [showError]="controlHasError('cardNumber', 'required') || controlHasError('cardNumber', 'minlength') || luhnErrorVisible"
+      [errorMessage]="controlHasError('cardNumber', 'required') ? 'Ingresa el número de tarjeta' : controlHasError('cardNumber', 'minlength') ? 'Debe tener 16 dígitos' : 'Número inválido por Luhn'">
     </app-custom-input>
 
     <app-custom-input
@@ -52,6 +52,6 @@
       <input id="card-color" type="color" formControlName="color" />
     </div>
 
-    <ion-button expand="block" type="submit">Guardar tarjeta</ion-button>
+    <ion-button expand="block" type="submit" [disabled]="form.invalid">Guardar tarjeta</ion-button>
   </form>
 </ion-content>

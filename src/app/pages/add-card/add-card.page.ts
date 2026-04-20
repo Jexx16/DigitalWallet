@@ -6,6 +6,7 @@ import { CardService } from '../../core/services/card.service';
 import { LoadingService } from '../../core/services/loading.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
+import { AlertController } from '@ionic/angular';
 import { Card } from '../../models/card.model';
 
 @Component({
@@ -45,7 +46,8 @@ export class AddCardPage implements OnInit {
     private authService: AuthService,
     private loadingService: LoadingService,
     private toastService: ToastService,
-    private router: Router
+    private router: Router,
+    private alertController: AlertController
   ) {}
 
   ngOnInit(): void {
@@ -93,6 +95,38 @@ export class AddCardPage implements OnInit {
       return;
     }
 
+    const expiryDate = this.form.controls.expiryDate.value;
+    const expiryStatus = this.cardService.getCardExpiryStatus(expiryDate);
+
+    if (expiryStatus === 'expired') {
+      const alert = await this.alertController.create({
+        header: 'Tarjeta Expirada',
+        message: 'La tarjeta ya está expirada. ¿Deseas guardarla de todas formas?',
+        buttons: [
+          {
+            text: 'Cancelar',
+            role: 'cancel'
+          },
+          {
+            text: 'Guardar de todas formas',
+            handler: () => {
+              void this.proceedToSaveCard();
+            }
+          }
+        ]
+      });
+      await alert.present();
+      return;
+    }
+
+    if (expiryStatus === 'expiring-soon') {
+      await this.toastService.show('⚠️ La tarjeta está próxima a expirar.', 'long');
+    }
+
+    await this.proceedToSaveCard();
+  }
+
+  private async proceedToSaveCard(): Promise<void> {
     const uid = this.authService.getCurrentUid();
     if (!uid) {
       await this.toastService.showError('No hay sesión activa.');

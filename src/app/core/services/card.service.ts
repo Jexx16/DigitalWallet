@@ -76,6 +76,57 @@ export class CardService {
   }
 
   /**
+   * Verifica si la tarjeta está expirada
+   * @param expiryDate Fecha en formato MM/YY
+   * @returns true si la tarjeta está expirada, false si aún es válida
+   */
+  isCardExpired(expiryDate: string): boolean {
+    const [month, year] = expiryDate.split('/');
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1;
+
+    // Convertir YY a YYYY (asumiendo tarjetas del 2000 en adelante)
+    const fullYear = 2000 + parseInt(year);
+    const expiryMonth = parseInt(month);
+
+    // La tarjeta es válida hasta el último día del mes de expiración
+    if (fullYear < currentYear) {
+      return true; // Año pasado
+    }
+
+    if (fullYear === currentYear && expiryMonth < currentMonth) {
+      return true; // Mes actual pero pasado
+    }
+
+    return false; // Tarjeta válida
+  }
+
+  /**
+   * Obtiene el estado de la tarjeta
+   */
+  getCardExpiryStatus(expiryDate: string): 'expired' | 'expiring-soon' | 'valid' {
+    const [month, year] = expiryDate.split('/');
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1;
+
+    const fullYear = 2000 + parseInt(year);
+    const expiryMonth = parseInt(month);
+
+    if (fullYear < currentYear || (fullYear === currentYear && expiryMonth < currentMonth)) {
+      return 'expired';
+    }
+
+    // Si es este mes o el próximo mes, es "expiring soon"
+    if (fullYear === currentYear && expiryMonth <= currentMonth + 1) {
+      return 'expiring-soon';
+    }
+
+    return 'valid';
+  }
+
+  /**
    * Obtiene todas las tarjetas del usuario
    */
   getCards(uid: string): Observable<Card[]> {

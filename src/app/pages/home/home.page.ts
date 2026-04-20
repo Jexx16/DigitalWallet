@@ -115,6 +115,16 @@ export class HomePage implements OnInit, OnDestroy {
     this.selectedTransaction = null;
   }
 
+  async logout(): Promise<void> {
+    try {
+      await this.authService.logout();
+      await this.toastService.show('✅ Sesión cerrada.');
+      await this.router.navigate(['/login']);
+    } catch (error) {
+      await this.toastService.showError(this.getErrorMessage(error));
+    }
+  }
+
   private async loadDashboardData(): Promise<void> {
     try {
       const user = await firstValueFrom(
