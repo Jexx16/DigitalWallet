@@ -56,6 +56,11 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   async onAction(action: 'transfer' | 'pay' | 'add' | 'history'): Promise<void> {
+    if (action === 'transfer') {
+      await this.router.navigate(['/transfer']);
+      return;
+    }
+
     if (action === 'pay') {
       const queryParams = this.activeCardId ? { cardId: this.activeCardId } : {};
       await this.router.navigate(['/payment'], { queryParams });
@@ -71,8 +76,6 @@ export class HomePage implements OnInit, OnDestroy {
       document.getElementById('transaction-section')?.scrollIntoView({ behavior: 'smooth' });
       return;
     }
-
-    await this.toastService.show('La acción de transferir estará disponible pronto.');
   }
 
   onCardSelected(cardId: string): void {
@@ -175,8 +178,13 @@ export class HomePage implements OnInit, OnDestroy {
           return;
         }
 
+        // Buscar tarjeta por defecto, o usar la primera si no existe
+        const defaultCard = cards.find((card) => card.isDefault);
         const cardStillExists = cards.some((card) => card.id === this.activeCardId);
-        if (!cardStillExists) {
+        
+        if (defaultCard) {
+          this.activeCardId = defaultCard.id;
+        } else if (!cardStillExists) {
           this.activeCardId = cards[0].id;
         }
 

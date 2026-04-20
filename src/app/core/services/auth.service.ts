@@ -53,9 +53,25 @@ export class AuthService {
       throw new Error('No se recibió un token válido de Google.');
     }
 
-    const credential = GoogleAuthProvider.credential(normalizedToken);
-    const result = await signInWithCredential(this.auth, credential);
-    return result.user;
+    try {
+      const credential = GoogleAuthProvider.credential(normalizedToken);
+      const result = await signInWithCredential(this.auth, credential);
+      console.log('✅ Login exitoso con Google:', result.user.email);
+      return result.user;
+    } catch (error: any) {
+      console.error('❌ Error en loginWithGoogle:', error);
+      
+      // Detectar errores específicos
+      if (error.code === 'auth/invalid-oauth-provider') {
+        throw new Error('Google no está habilitado en Firebase Console. Contacta al administrador.');
+      }
+      
+      if (error.message?.includes('400')) {
+        throw new Error('Token de Google inválido. Intenta nuevamente.');
+      }
+      
+      throw new Error(`Error: ${error.message || 'Error desconocido en login de Google'}`);
+    }
   }
 
   /**
@@ -231,8 +247,14 @@ export class AuthService {
       initializeOptions.redirectUrl = environment.googleRedirectUrl?.trim() || `${window.location.origin}/login`;
     }
 
-    await GoogleSignIn.initialize(initializeOptions);
-    this.googleInitialized = true;
+    try {
+      await GoogleSignIn.initialize(initializeOptions);
+      this.googleInitialized = true;
+      console.log('✅ GoogleSignIn inicializado correctamente');
+    } catch (error) {
+      console.error('❌ Error inicializando GoogleSignIn:', error);
+      throw new Error(`No se pudo inicializar Google Sign-In: ${error}`);
+    }
   }
 
   private hasGoogleRedirectParams(): boolean {

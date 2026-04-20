@@ -133,7 +133,14 @@ export class PaymentPage implements OnInit, OnDestroy {
 
         const queryCardId = this.route.snapshot.queryParamMap.get('cardId');
         const validQueryCard = !!queryCardId && cards.some((card) => card.id === queryCardId);
-        this.selectedCardId = validQueryCard ? queryCardId : cards[0].id;
+        
+        if (validQueryCard) {
+          this.selectedCardId = queryCardId;
+        } else {
+          // Buscar tarjeta por defecto, o usar la primera
+          const defaultCard = cards.find((card) => card.isDefault);
+          this.selectedCardId = defaultCard ? defaultCard.id : cards[0].id;
+        }
       },
       error: async (error) => {
         this.loading = false;
@@ -151,11 +158,16 @@ export class PaymentPage implements OnInit, OnDestroy {
     this.processing = true;
     await this.loadingService.show('Procesando pago...');
     try {
-      await this.paymentService.processPayment(this.uid, {
+      const paymentResult = await this.paymentService.processPayment(this.uid, {
         cardId: this.selectedCard.id,
         merchant: result.merchant,
         amount: result.amount
       }, !!this.userProfile?.biometricEnabled);
+
+      // Verificar si el pago fue exitoso
+      if (!paymentResult.success) {
+        throw new Error(paymentResult.error || 'Error al procesar el pago');
+      }
 
       await Haptics.impact({ style: ImpactStyle.Medium });
 

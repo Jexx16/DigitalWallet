@@ -7,5 +7,6 @@ export interface Card {
   expiryDate: string;       // MM/YY
   franchise: 'visa' | 'mastercard' | 'unknown';
   color: string;            // HEX para personalización UI
+  isDefault?: boolean;      // Marcar como tarjeta por defecto
   createdAt: Timestamp;
 }

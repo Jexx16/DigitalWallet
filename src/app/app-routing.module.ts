@@ -35,6 +35,11 @@ const routes: Routes = [
     loadChildren: () => import('./pages/payment/payment.module').then( m => m.PaymentPageModule)
   },
   {
+    path: 'transfer',
+    canActivate: [AuthGuard],
+    loadChildren: () => import('./pages/transfer/transfer.module').then( m => m.TransferModule)
+  },
+  {
     path: '**',
     redirectTo: 'login'
   }

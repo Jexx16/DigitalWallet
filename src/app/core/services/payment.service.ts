@@ -48,11 +48,8 @@ export class PaymentService {
   ): Promise<PaymentResult> {
     try {
       // Validar que el dispositivo tenga biometría si es requerida
-      if (requireBiometric || biometricEnabled) {
-        if (!this.biometricService.isNativeDevice()) {
-          throw new Error('La biometría solo está disponible en dispositivos nativos');
-        }
-
+      // Solo en dispositivos nativos (Android/iOS)
+      if ((requireBiometric || biometricEnabled) && this.biometricService.isNativeDevice()) {
         // Validar disponibilidad de biometría
         const availability = await this.biometricService.checkBiometricAvailability();
         if (!availability.isAvailable) {
@@ -189,5 +186,27 @@ export class PaymentService {
    */
   async updateTransactionEmoji(uid: string, txId: string, emoji: string): Promise<void> {
     return this.firestoreService.updateDocument(`users/${uid}/transactions/${txId}`, { emoji });
+  }
+
+  /**
+   * Guarda una transacción simple sin validación biométrica
+   * Útil para transferencias y otros tipos de transacciones
+   */
+  async saveTransaction(uid: string, transaction: Omit<Transaction, 'id'>): Promise<string> {
+    try {
+      const transactionData = {
+        ...transaction,
+        emoji: transaction.emoji || ''
+      };
+      
+      const docRef = await this.firestoreService.addDocument(
+        `users/${uid}/transactions`,
+        transactionData
+      );
+      return docRef.id;
+    } catch (error) {
+      console.error('Error guardando transacción:', error);
+      throw error;
+    }
   }
 }
