@@ -24,6 +24,7 @@ import { PaymentSimulatorComponent } from '../../shared/components/payment-simul
 export class PaymentPage implements OnInit, OnDestroy {
   cards: Card[] = [];
   selectedCardId: string | null = null;
+  flippingCardId: string | null = null;
   userProfile: UserProfile | null = null;
   loading = true;
   processing = false;
@@ -31,6 +32,7 @@ export class PaymentPage implements OnInit, OnDestroy {
   private uid: string | null = null;
   private cardsSub?: Subscription;
   private profileSub?: Subscription;
+  private flipResetTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
     private authService: AuthService,
@@ -52,6 +54,10 @@ export class PaymentPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.cardsSub?.unsubscribe();
     this.profileSub?.unsubscribe();
+    if (this.flipResetTimer) {
+      clearTimeout(this.flipResetTimer);
+      this.flipResetTimer = undefined;
+    }
   }
 
   get selectedCard(): Card | undefined {
@@ -60,6 +66,15 @@ export class PaymentPage implements OnInit, OnDestroy {
 
   onCardSelected(cardId: string): void {
     this.selectedCardId = cardId;
+    this.flippingCardId = cardId;
+    if (this.flipResetTimer) {
+      clearTimeout(this.flipResetTimer);
+    }
+
+    this.flipResetTimer = setTimeout(() => {
+      this.flippingCardId = null;
+      this.flipResetTimer = undefined;
+    }, 700);
   }
 
   async openSimulator(): Promise<void> {

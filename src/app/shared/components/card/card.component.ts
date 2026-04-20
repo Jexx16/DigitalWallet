@@ -17,11 +17,11 @@ import { Card } from '../../../models/card.model';
           <img *ngIf="card.franchise === 'visa'"
                src="assets/icon/visa-logo.svg"
                alt="Visa"
-               class="franchise-logo" />
+               class="franchise-logo visa-logo" />
           <img *ngIf="card.franchise === 'mastercard'"
                src="assets/icon/mastercard-logo.svg"
                alt="Mastercard"
-               class="franchise-logo" />
+               class="franchise-logo mastercard-logo" />
           <ion-icon *ngIf="card.franchise === 'unknown'"
                     name="card-outline"
                     class="franchise-icon"></ion-icon>
@@ -47,7 +47,8 @@ import { Card } from '../../../models/card.model';
   `,
   styles: [`
     .wallet-card {
-      width: 320px;
+      width: min(320px, calc(100vw - 72px));
+      max-width: 320px;
       height: 195px;
       border-radius: 20px;
       padding: 24px;
@@ -103,8 +104,18 @@ import { Card } from '../../../models/card.model';
     }
 
     .franchise-logo {
+      width: auto;
+      object-fit: contain;
+    }
+
+    .visa-logo {
+      height: 22px;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+    }
+
+    .mastercard-logo {
       height: 32px;
-      filter: brightness(0) invert(1);
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.28));
     }
 
     .franchise-icon {

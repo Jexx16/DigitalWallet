@@ -69,7 +69,7 @@ export class PaymentService {
         merchant: paymentRequest.merchant,
         amount: paymentRequest.amount,
         description: paymentRequest.description || '',
-        category: paymentRequest.category,
+        category: paymentRequest.category?.trim() || 'General',
         date: Timestamp.now(),
         status: 'success',
         emoji: ''
@@ -194,8 +194,10 @@ export class PaymentService {
    */
   async saveTransaction(uid: string, transaction: Omit<Transaction, 'id'>): Promise<string> {
     try {
-      const transactionData = {
+      const transactionData: Omit<Transaction, 'id'> = {
         ...transaction,
+        description: transaction.description?.trim() || '',
+        category: transaction.category?.trim() || 'General',
         emoji: transaction.emoji || ''
       };
       

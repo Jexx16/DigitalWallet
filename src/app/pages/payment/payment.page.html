@@ -15,10 +15,14 @@
       <button
         type="button"
         class="card-select"
-        *ngFor="let card of cards"
+        *ngFor="let card of cards; let i = index"
+        [style.--card-index]="i"
         [class.active]="card.id === selectedCardId"
+        [class.flipping]="card.id === flippingCardId"
         (click)="onCardSelected(card.id)">
-        <app-card [card]="card"></app-card>
+        <div class="card-shell">
+          <app-card [card]="card"></app-card>
+        </div>
       </button>
     </div>
 

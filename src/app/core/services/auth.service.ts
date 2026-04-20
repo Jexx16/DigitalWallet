@@ -152,6 +152,10 @@ export class AuthService {
    * Elimina credenciales biométricas almacenadas en el dispositivo.
    */
   async disableBiometric(): Promise<void> {
+    if (!Capacitor.isNativePlatform()) {
+      return;
+    }
+
     await NativeBiometric.deleteCredentials({ server: this.biometricServer });
   }
 
@@ -159,6 +163,10 @@ export class AuthService {
    * Verifica si existe acceso biométrico listo para usar.
    */
   async canUseBiometricLogin(): Promise<boolean> {
+    if (!Capacitor.isNativePlatform()) {
+      return false;
+    }
+
     const availability = await NativeBiometric.isAvailable();
     if (!availability.isAvailable) {
       return false;
@@ -172,6 +180,10 @@ export class AuthService {
    * Login usando biometría + credenciales almacenadas.
    */
   async loginWithBiometric(): Promise<User> {
+    if (!Capacitor.isNativePlatform()) {
+      throw new Error('La biometría solo está disponible en dispositivos nativos.');
+    }
+
     const availability = await NativeBiometric.isAvailable();
     if (!availability.isAvailable) {
       throw new Error('La biometría no está disponible en este dispositivo.');
@@ -199,6 +211,10 @@ export class AuthService {
    * Persiste credenciales para acceso biométrico rápido.
    */
   async setBiometricCredentials(email: string, password: string): Promise<void> {
+    if (!Capacitor.isNativePlatform()) {
+      throw new Error('La biometría solo está disponible en dispositivos nativos.');
+    }
+
     const availability = await NativeBiometric.isAvailable();
     if (!availability.isAvailable) {
       throw new Error('La biometría no está disponible en este dispositivo.');

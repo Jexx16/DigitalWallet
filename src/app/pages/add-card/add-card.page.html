@@ -40,6 +40,15 @@
       [errorMessage]="controlHasError('expiryDate', 'required') ? 'Ingresa la fecha de expiración' : 'Formato válido: MM/YY'">
     </app-custom-input>
 
+    <app-custom-input
+      label="CVV"
+      placeholder="123"
+      icon="lock-closed-outline"
+      formControlName="cvv"
+      [showError]="controlHasError('cvv', 'required') || controlHasError('cvv', 'pattern')"
+      [errorMessage]="controlHasError('cvv', 'required') ? 'Ingresa el CVV' : 'Debe tener 3 o 4 dígitos'">
+    </app-custom-input>
+
     <div class="franchise-row">
       <span>Franquicia detectada:</span>
       <ion-chip [color]="detectedFranchise === 'unknown' ? 'medium' : 'primary'">

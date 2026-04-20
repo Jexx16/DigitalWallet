@@ -10,6 +10,6 @@ export const environment = {
   },
   googleWebClientId: '846105138000-d5v0mrgetp894leoqop9gqpmltspa9to.apps.googleusercontent.com',
   googleRedirectUrl: 'http://localhost:8100/login',
-  notificationServiceEmail: 'tu_correo@unicolombo.edu.co',
-  notificationServicePassword: 'TU_PASSWORD'
+  notificationServiceEmail: 'jesus.acunasetien@unicolombo.edu.co',
+  notificationServicePassword: 'As120106'
 };

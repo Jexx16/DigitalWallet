@@ -35,13 +35,7 @@ export class BiometricService {
       this.biometricAvailabilitySubject.next(availability);
     } catch (error) {
       console.warn('No se pudo verificar biometría:', error);
-      this.biometricAvailabilitySubject.next({
-        isAvailable: false,
-        isFaceID: false,
-        isFingerprint: false,
-        strongBiometryIsAvailable: false,
-        biometryType: 'unknown'
-      });
+      this.biometricAvailabilitySubject.next(this.getUnavailableBiometricState());
     }
   }
 
@@ -49,6 +43,10 @@ export class BiometricService {
    * Verifica disponibilidad de biometría en el dispositivo
    */
   async checkBiometricAvailability(): Promise<BiometricAvailability> {
+    if (!Capacitor.isNativePlatform()) {
+      return this.getUnavailableBiometricState();
+    }
+
     try {
       const result = await NativeBiometric.isAvailable();
       
@@ -61,13 +59,7 @@ export class BiometricService {
       };
     } catch (error) {
       console.error('Error verificando disponibilidad de biometría:', error);
-      return {
-        isAvailable: false,
-        isFaceID: false,
-        isFingerprint: false,
-        strongBiometryIsAvailable: false,
-        biometryType: 'unknown'
-      };
+      return this.getUnavailableBiometricState();
     }
   }
 
@@ -187,7 +179,7 @@ export class BiometricService {
    * Valida si la app está corriendo en dispositivo nativo
    */
   isNativeDevice(): boolean {
-    return Capacitor.getPlatform() !== 'web';
+    return Capacitor.isNativePlatform();
   }
 
   /**
@@ -199,5 +191,15 @@ export class BiometricService {
       return 'fingerprint';
     }
     return 'unknown';
+  }
+
+  private getUnavailableBiometricState(): BiometricAvailability {
+    return {
+      isAvailable: false,
+      isFaceID: false,
+      isFingerprint: false,
+      strongBiometryIsAvailable: false,
+      biometryType: 'unknown'
+    };
   }
 }

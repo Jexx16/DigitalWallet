@@ -5,6 +5,16 @@ import { AuthService } from './auth.service';
 import { Observable } from 'rxjs';
 import { Timestamp } from '@angular/fire/firestore';
 
+export interface CardCreationRequest extends Omit<Card, 'id' | 'createdAt'> {
+  cvv: string;
+}
+
+export interface CardUpdateRequest {
+  cardHolder?: string;
+  expiryDate?: string;
+  color?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -76,6 +86,13 @@ export class CardService {
   }
 
   /**
+   * Formatea CVV/CVC y limita a 4 dígitos
+   */
+  formatSecurityCode(value: string): string {
+    return value.replace(/\D/g, '').substring(0, 4);
+  }
+
+  /**
    * Verifica si la tarjeta está expirada
    * @param expiryDate Fecha en formato MM/YY
    * @returns true si la tarjeta está expirada, false si aún es válida
@@ -137,12 +154,17 @@ export class CardService {
   /**
    * Agrega una nueva tarjeta (valida Luhn antes)
    */
-  async addCard(uid: string, cardData: Omit<Card, 'id' | 'createdAt'>): Promise<void> {
+  async addCard(uid: string, cardData: CardCreationRequest): Promise<void> {
     const safeUid = this.resolveUid(uid);
     const fullNumber = this.normalizeCardNumber(cardData.cardNumber);
+    const securityCode = this.formatSecurityCode(cardData.cvv);
 
     if (!this.luhnCheck(fullNumber)) {
       throw new Error('Número de tarjeta inválido (Luhn)');
+    }
+
+    if (!/^\d{3,4}$/.test(securityCode)) {
+      throw new Error('CVV inválido. Debe tener 3 o 4 dígitos.');
     }
 
     if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(cardData.expiryDate)) {
@@ -154,8 +176,10 @@ export class CardService {
       throw new Error('El nombre del titular es obligatorio.');
     }
 
+    const { cvv: _cvv, ...safeCardData } = cardData;
+
     const card: Omit<Card, 'id'> = {
-      ...cardData,
+      ...safeCardData,
       cardHolder: trimmedHolder,
       cardNumber: fullNumber.slice(-4), // Solo guardar últimos 4 dígitos
       franchise: this.detectFranchise(fullNumber),
@@ -171,6 +195,50 @@ export class CardService {
   async deleteCard(uid: string, cardId: string): Promise<void> {
     const safeUid = this.resolveUid(uid);
     return this.firestoreService.deleteDocument(`users/${safeUid}/cards/${cardId}`);
+  }
+
+  /**
+   * Edita datos permitidos de una tarjeta guardada
+   */
+  async updateCard(uid: string, cardId: string, updates: CardUpdateRequest): Promise<void> {
+    const safeUid = this.resolveUid(uid);
+
+    const normalizedCardId = cardId?.trim();
+    if (!normalizedCardId) {
+      throw new Error('Tarjeta inválida para actualizar.');
+    }
+
+    const payload: CardUpdateRequest = {};
+
+    if (updates.cardHolder !== undefined) {
+      const holder = updates.cardHolder.trim();
+      if (!holder) {
+        throw new Error('El nombre del titular es obligatorio.');
+      }
+      payload.cardHolder = holder;
+    }
+
+    if (updates.expiryDate !== undefined) {
+      const expiryDate = this.formatExpiryDate(updates.expiryDate.trim());
+      if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiryDate)) {
+        throw new Error('Fecha de expiración inválida. Usa formato MM/YY.');
+      }
+      payload.expiryDate = expiryDate;
+    }
+
+    if (updates.color !== undefined) {
+      const color = updates.color.trim();
+      if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
+        throw new Error('Color inválido para la tarjeta.');
+      }
+      payload.color = color;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      throw new Error('No hay cambios para guardar.');
+    }
+
+    await this.firestoreService.updateDocument(`users/${safeUid}/cards/${normalizedCardId}`, payload);
   }
 
   private normalizeCardNumber(cardNumber: string): string {

@@ -22,6 +22,7 @@ export class AddCardPage implements OnInit {
     cardNumber: ['', [Validators.required, Validators.minLength(19)]],
     cardHolder: ['', [Validators.required, Validators.minLength(3)]],
     expiryDate: ['', [Validators.required, Validators.pattern(/^(0[1-9]|1[0-2])\/\d{2}$/)]],
+    cvv: ['', [Validators.required, Validators.pattern(/^\d{3,4}$/)]],
     color: ['#0f3460', Validators.required]
   });
 
@@ -69,6 +70,13 @@ export class AddCardPage implements OnInit {
         this.form.controls.expiryDate.setValue(formatted, { emitEvent: false });
       }
       this.updatePreview();
+    });
+
+    this.form.controls.cvv.valueChanges.subscribe((value) => {
+      const formatted = this.cardService.formatSecurityCode(value);
+      if (formatted !== value) {
+        this.form.controls.cvv.setValue(formatted, { emitEvent: false });
+      }
     });
 
     this.form.controls.cardHolder.valueChanges.subscribe(() => this.updatePreview());
@@ -140,6 +148,7 @@ export class AddCardPage implements OnInit {
         cardNumber: value.cardNumber,
         cardHolder: value.cardHolder,
         expiryDate: value.expiryDate,
+        cvv: value.cvv,
         franchise: this.detectedFranchise,
         color: value.color
       });
@@ -152,7 +161,7 @@ export class AddCardPage implements OnInit {
     }
   }
 
-  controlHasError(controlName: 'cardNumber' | 'cardHolder' | 'expiryDate' | 'color', errorName: string): boolean {
+  controlHasError(controlName: 'cardNumber' | 'cardHolder' | 'expiryDate' | 'cvv' | 'color', errorName: string): boolean {
     const control = this.form.controls[controlName];
     return control.touched && control.hasError(errorName);
   }

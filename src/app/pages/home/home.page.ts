@@ -1,10 +1,14 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { User } from '@angular/fire/auth';
+import { Timestamp } from '@angular/fire/firestore';
 import { EmojiEvent } from '@ctrl/ngx-emoji-mart/ngx-emoji';
 import { Subscription, filter, firstValueFrom, take } from 'rxjs';
 import { Router } from '@angular/router';
+import { AlertController } from '@ionic/angular';
 import { AuthService } from '../../core/services/auth.service';
-import { CardService } from '../../core/services/card.service';
+import { BiometricService } from '../../core/services/biometric.service';
+import { CardService, CardUpdateRequest } from '../../core/services/card.service';
+import { NotificationService, NotificationSummary } from '../../core/services/notification.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { ToastService } from '../../core/services/toast.service';
 import { UserService } from '../../core/services/user.service';
@@ -23,24 +27,42 @@ export class HomePage implements OnInit, OnDestroy {
   cards: Card[] = [];
   activeCardId: string | null = null;
   transactions: Transaction[] = [];
+  allTransactions: Transaction[] = [];
+  notifications: NotificationSummary[] = [];
   balance = 0;
   loadingCards = true;
   loadingTransactions = true;
   showEmojiPicker = false;
+  showProfileModal = false;
+  showNotificationsModal = false;
+  showCardEditorModal = false;
+  showAllMovements = false;
+  selectedDateFilter: Date | null = null;
+  profileBiometricEnabled = false;
+  editCardHolder = '';
+  editCardExpiryDate = '';
+  editCardColor = '#0f3460';
   selectedTransaction: Transaction | null = null;
+  private editingCardId: string | null = null;
+  private authAccount: User | null = null;
+  private profileBootstrapInProgress = false;
 
   private uid: string | null = null;
   private cardsSub?: Subscription;
   private allTransactionsSub?: Subscription;
   private cardTransactionsSub?: Subscription;
   private profileSub?: Subscription;
+  private notificationsSub?: Subscription;
 
   constructor(
     private authService: AuthService,
     private userService: UserService,
     private cardService: CardService,
+    private biometricService: BiometricService,
+    private notificationService: NotificationService,
     private paymentService: PaymentService,
     private toastService: ToastService,
+    private alertController: AlertController,
     private router: Router
   ) {}
 
@@ -53,6 +75,7 @@ export class HomePage implements OnInit, OnDestroy {
     this.allTransactionsSub?.unsubscribe();
     this.cardTransactionsSub?.unsubscribe();
     this.profileSub?.unsubscribe();
+    this.notificationsSub?.unsubscribe();
   }
 
   async onAction(action: 'transfer' | 'pay' | 'add' | 'history'): Promise<void> {
@@ -73,9 +96,277 @@ export class HomePage implements OnInit, OnDestroy {
     }
 
     if (action === 'history') {
+      this.showAllMovements = true;
       document.getElementById('transaction-section')?.scrollIntoView({ behavior: 'smooth' });
       return;
     }
+  }
+
+  get profileInitials(): string {
+    const parts = this.accountDisplayName
+      .split(' ')
+      .map((part) => part.trim())
+      .filter((part) => !!part);
+
+    if (parts.length === 0) {
+      return 'US';
+    }
+
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+
+    return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
+  }
+
+  get greetingName(): string {
+    const firstWord = this.accountDisplayName.split(' ')[0]?.trim();
+    return firstWord || 'Usuario';
+  }
+
+  get accountDisplayName(): string {
+    const profileName = `${this.userProfile?.nombre || ''} ${this.userProfile?.apellido || ''}`.trim();
+    if (profileName) {
+      return profileName;
+    }
+
+    const displayName = this.authAccount?.displayName?.trim();
+    if (displayName) {
+      return displayName;
+    }
+
+    const emailPrefix = this.authAccount?.email?.split('@')[0]?.trim();
+    return emailPrefix || 'Usuario';
+  }
+
+  get accountEmail(): string {
+    const profileEmail = this.userProfile?.email?.trim();
+    if (profileEmail) {
+      return profileEmail;
+    }
+
+    const authEmail = this.authAccount?.email?.trim();
+    return authEmail || 'Sin correo disponible';
+  }
+
+  get latestNotification(): NotificationSummary | null {
+    return this.notifications.length > 0 ? this.notifications[0] : null;
+  }
+
+  get activeCard(): Card | null {
+    if (!this.activeCardId) {
+      return null;
+    }
+
+    return this.cards.find((card) => card.id === this.activeCardId) || null;
+  }
+
+  get filteredAllTransactions(): Transaction[] {
+    const selectedDate = this.selectedDateFilter;
+    if (!selectedDate) {
+      return this.allTransactions;
+    }
+
+    return this.allTransactions.filter((tx) => this.isSameDate(tx.date, selectedDate));
+  }
+
+  get groupedTransactions(): Array<{ date: Date; label: string; transactions: Transaction[] }> {
+    const grouped = new Map<string, { date: Date; transactions: Transaction[] }>();
+
+    this.filteredAllTransactions.forEach((tx) => {
+      const txDate = this.toDate(tx.date);
+      if (!txDate) {
+        return;
+      }
+
+      const key = `${txDate.getFullYear()}-${txDate.getMonth()}-${txDate.getDate()}`;
+      if (!grouped.has(key)) {
+        grouped.set(key, { date: txDate, transactions: [] });
+      }
+      grouped.get(key)?.transactions.push(tx);
+    });
+
+    return Array.from(grouped.values())
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .map((group) => ({
+        date: group.date,
+        label: this.formatGroupDate(group.date),
+        transactions: group.transactions
+      }));
+  }
+
+  openProfileModal(): void {
+    this.profileBiometricEnabled = !!this.userProfile?.biometricEnabled;
+    this.showProfileModal = true;
+  }
+
+  closeProfileModal(): void {
+    this.showProfileModal = false;
+    this.profileBiometricEnabled = !!this.userProfile?.biometricEnabled;
+  }
+
+  async saveProfileSettings(): Promise<void> {
+    if (!this.uid) {
+      return;
+    }
+
+    const profileReady = await this.ensureProfileDocument(true);
+    if (!profileReady || !this.userProfile) {
+      return;
+    }
+
+    if (this.profileBiometricEnabled && !this.userProfile.biometricEnabled) {
+      const availability = await this.biometricService.checkBiometricAvailability();
+      if (!availability.isAvailable) {
+        await this.toastService.showError('La biometría no está disponible en este dispositivo.');
+        this.profileBiometricEnabled = false;
+        return;
+      }
+    }
+
+    try {
+      await this.userService.toggleBiometric(this.uid, this.profileBiometricEnabled);
+      this.userProfile = {
+        ...this.userProfile,
+        biometricEnabled: this.profileBiometricEnabled
+      };
+      this.biometricService.setBiometricEnabled(this.profileBiometricEnabled);
+      this.showProfileModal = false;
+      await this.toastService.showSuccess('Preferencias guardadas');
+    } catch (error) {
+      await this.toastService.showError(this.getErrorMessage(error));
+    }
+  }
+
+  openNotificationsModal(): void {
+    this.showNotificationsModal = true;
+  }
+
+  closeNotificationsModal(): void {
+    this.showNotificationsModal = false;
+  }
+
+  openCardEditor(): void {
+    const card = this.activeCard;
+    if (!card) {
+      return;
+    }
+
+    this.editingCardId = card.id;
+    this.editCardHolder = card.cardHolder;
+    this.editCardExpiryDate = card.expiryDate;
+    this.editCardColor = card.color || '#0f3460';
+    this.showCardEditorModal = true;
+  }
+
+  closeCardEditor(): void {
+    this.showCardEditorModal = false;
+    this.editingCardId = null;
+    this.editCardHolder = '';
+    this.editCardExpiryDate = '';
+    this.editCardColor = '#0f3460';
+  }
+
+  onEditExpiryChanged(value: string): void {
+    const formatted = this.cardService.formatExpiryDate(value);
+    this.editCardExpiryDate = formatted;
+  }
+
+  async saveCardEdits(): Promise<void> {
+    if (!this.uid || !this.editingCardId) {
+      return;
+    }
+
+    const updates: CardUpdateRequest = {
+      cardHolder: this.editCardHolder,
+      expiryDate: this.editCardExpiryDate,
+      color: this.editCardColor
+    };
+
+    try {
+      await this.cardService.updateCard(this.uid, this.editingCardId, updates);
+      this.cards = this.cards.map((card) => {
+        if (card.id !== this.editingCardId) {
+          return card;
+        }
+
+        return {
+          ...card,
+          cardHolder: updates.cardHolder?.trim() || card.cardHolder,
+          expiryDate: this.cardService.formatExpiryDate(updates.expiryDate || card.expiryDate),
+          color: updates.color || card.color
+        };
+      });
+
+      this.closeCardEditor();
+      await this.toastService.showSuccess('Tarjeta actualizada correctamente');
+    } catch (error) {
+      await this.toastService.showError(this.getErrorMessage(error));
+    }
+  }
+
+  async confirmDeleteActiveCard(): Promise<void> {
+    const card = this.activeCard;
+    if (!card) {
+      return;
+    }
+
+    const alert = await this.alertController.create({
+      header: 'Eliminar tarjeta',
+      message: `¿Seguro que deseas eliminar la tarjeta terminada en ${card.cardNumber}?`,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Eliminar',
+          role: 'destructive',
+          handler: () => {
+            void this.deleteActiveCard(card);
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  toggleMovementView(): void {
+    this.showAllMovements = !this.showAllMovements;
+    if (!this.showAllMovements) {
+      this.selectedDateFilter = null;
+    }
+  }
+
+  onDateSelected(date: Date): void {
+    this.selectedDateFilter = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      12,
+      0,
+      0,
+      0
+    );
+    this.showAllMovements = true;
+  }
+
+  clearDateFilter(): void {
+    this.selectedDateFilter = null;
+  }
+
+  formatNotificationTimestamp(date?: Date | null): string {
+    if (!date) {
+      return '';
+    }
+
+    return date.toLocaleString('es-CO', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   onCardSelected(cardId: string): void {
@@ -120,6 +411,9 @@ export class HomePage implements OnInit, OnDestroy {
 
   async logout(): Promise<void> {
     try {
+      this.showProfileModal = false;
+      this.showNotificationsModal = false;
+      this.showCardEditorModal = false;
       await this.authService.logout();
       await this.toastService.show('✅ Sesión cerrada.');
       await this.router.navigate(['/login']);
@@ -137,8 +431,10 @@ export class HomePage implements OnInit, OnDestroy {
         )
       );
 
+      this.authAccount = user;
       this.uid = user.uid;
       this.subscribeToProfile();
+      this.subscribeToNotifications();
       this.subscribeToCards();
       this.subscribeToAllTransactions();
     } catch (error) {
@@ -153,10 +449,28 @@ export class HomePage implements OnInit, OnDestroy {
 
     this.profileSub = this.userService.getUserProfile(this.uid).subscribe({
       next: (profile) => {
-        this.userProfile = profile;
+        const safeProfile = profile as UserProfile | null | undefined;
+        if (!safeProfile) {
+          this.userProfile = null;
+          this.profileBiometricEnabled = false;
+          void this.ensureProfileDocument();
+          return;
+        }
+
+        this.userProfile = safeProfile;
+        this.profileBiometricEnabled = safeProfile.biometricEnabled;
+        this.biometricService.setBiometricEnabled(safeProfile.biometricEnabled);
       },
       error: async (error) => {
         await this.toastService.showError(this.getErrorMessage(error));
+      }
+    });
+  }
+
+  private subscribeToNotifications(): void {
+    this.notificationsSub = this.notificationService.notifications$.subscribe({
+      next: (notifications) => {
+        this.notifications = notifications;
       }
     });
   }
@@ -173,6 +487,7 @@ export class HomePage implements OnInit, OnDestroy {
         if (cards.length === 0) {
           this.activeCardId = null;
           this.transactions = [];
+          this.closeCardEditor();
           this.loadingCards = false;
           this.loadingTransactions = false;
           return;
@@ -180,12 +495,16 @@ export class HomePage implements OnInit, OnDestroy {
 
         // Buscar tarjeta por defecto, o usar la primera si no existe
         const defaultCard = cards.find((card) => card.isDefault);
-        const cardStillExists = cards.some((card) => card.id === this.activeCardId);
+        const cardStillExists = this.activeCardId
+          ? cards.some((card) => card.id === this.activeCardId)
+          : false;
         
-        if (defaultCard) {
-          this.activeCardId = defaultCard.id;
-        } else if (!cardStillExists) {
-          this.activeCardId = cards[0].id;
+        if (!cardStillExists) {
+          this.activeCardId = defaultCard?.id || cards[0].id;
+        }
+
+        if (this.editingCardId && !cards.some((card) => card.id === this.editingCardId)) {
+          this.closeCardEditor();
         }
 
         this.loadingCards = false;
@@ -205,6 +524,7 @@ export class HomePage implements OnInit, OnDestroy {
 
     this.allTransactionsSub = this.paymentService.getAllTransactions(this.uid).subscribe({
       next: (transactions) => {
+        this.allTransactions = transactions;
         this.balance = transactions.reduce((acc, tx) => acc - tx.amount, 0);
       },
       error: async (error) => {
@@ -238,8 +558,118 @@ export class HomePage implements OnInit, OnDestroy {
 
   private getErrorMessage(error: unknown): string {
     if (error instanceof Error && error.message) {
+      if (error.message.includes('requires an index')) {
+        return 'Falta un índice de Firestore para cargar movimientos por tarjeta. Revisa la consola y crea el índice sugerido.';
+      }
       return error.message;
     }
     return 'Ocurrió un error inesperado.';
+  }
+
+  private async deleteActiveCard(card: Card): Promise<void> {
+    if (!this.uid || !card.id) {
+      return;
+    }
+
+    try {
+      await this.cardService.deleteCard(this.uid, card.id);
+      if (this.editingCardId === card.id) {
+        this.closeCardEditor();
+      }
+      await this.toastService.showSuccess('Tarjeta eliminada correctamente');
+    } catch (error) {
+      await this.toastService.showError(this.getErrorMessage(error));
+    }
+  }
+
+  private isSameDate(timestamp: Timestamp | Date, selectedDate: Date): boolean {
+    const txDate = this.toDate(timestamp);
+    if (!txDate) {
+      return false;
+    }
+
+    return txDate.getFullYear() === selectedDate.getFullYear()
+      && txDate.getMonth() === selectedDate.getMonth()
+      && txDate.getDate() === selectedDate.getDate();
+  }
+
+  private toDate(timestamp: Timestamp | Date): Date | null {
+    if (timestamp instanceof Date) {
+      return timestamp;
+    }
+
+    if (timestamp?.toDate) {
+      return timestamp.toDate();
+    }
+
+    return null;
+  }
+
+  private formatGroupDate(date: Date): string {
+    return date.toLocaleDateString('es-CO', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+
+  private async ensureProfileDocument(showErrors: boolean = false): Promise<boolean> {
+    if (!this.uid) {
+      return false;
+    }
+
+    if (this.userProfile) {
+      return true;
+    }
+
+    if (this.profileBootstrapInProgress) {
+      return false;
+    }
+
+    this.profileBootstrapInProgress = true;
+    try {
+      const fallbackProfile = this.buildFallbackUserProfile(this.uid);
+      await this.userService.createUserProfile(fallbackProfile);
+      this.userProfile = {
+        ...fallbackProfile,
+        createdAt: Timestamp.now()
+      };
+      this.profileBiometricEnabled = false;
+      this.biometricService.setBiometricEnabled(false);
+      return true;
+    } catch (error) {
+      if (showErrors) {
+        await this.toastService.showError(this.getErrorMessage(error));
+      }
+      return false;
+    } finally {
+      this.profileBootstrapInProgress = false;
+    }
+  }
+
+  private buildFallbackUserProfile(uid: string): Omit<UserProfile, 'createdAt'> {
+    const displayName = this.authAccount?.displayName?.trim() || '';
+    const nameParts = displayName
+      .split(' ')
+      .map((part) => part.trim())
+      .filter((part) => !!part);
+
+    const nombre = nameParts[0]
+      || this.authAccount?.email?.split('@')[0]?.trim()
+      || 'Usuario';
+    const apellido = nameParts.slice(1).join(' ') || 'Google';
+    const email = this.authAccount?.email?.trim() || 'sin-email@local';
+
+    return {
+      uid,
+      nombre,
+      apellido,
+      tipoDocumento: 'CC',
+      numeroDocumento: 'NO-REGISTRADO',
+      pais: 'No especificado',
+      email,
+      biometricEnabled: false
+    };
   }
 }
