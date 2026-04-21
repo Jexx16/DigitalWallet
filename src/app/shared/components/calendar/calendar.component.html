@@ -1,0 +1,12 @@
+<div class="calendar-wrapper card-glass">
+  <div class="calendar-header">
+    <ion-icon name="calendar-outline"></ion-icon>
+    <span>Filtrar por fecha</span>
+  </div>
+  <ion-datetime
+    presentation="date"
+    [max]="maxDate"
+    (ionChange)="onDateSelected($event)"
+    class="custom-datetime">
+  </ion-datetime>
+</div>

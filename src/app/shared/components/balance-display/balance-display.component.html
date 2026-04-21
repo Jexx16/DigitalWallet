@@ -1,0 +1,19 @@
+<div class="balance-container">
+  <span class="balance-label">Saldo total</span>
+  <div class="balance-amount-row">
+    <h1 class="balance-amount" *ngIf="!hidden">
+      {{ formatAmount(balance) }}
+    </h1>
+    <h1 class="balance-amount" *ngIf="hidden">
+      •••••••
+    </h1>
+    <ion-icon
+      [name]="hidden ? 'eye-outline' : 'eye-off-outline'"
+      class="toggle-visibility"
+      (click)="toggleVisibility()"
+    ></ion-icon>
+  </div>
+  <span class="balance-subtitle" *ngIf="!hidden">
+    {{ balance >= 0 ? 'Balance positivo' : 'Balance negativo' }}
+  </span>
+</div>

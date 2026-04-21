@@ -1,0 +1,30 @@
+.calendar-wrapper {
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.calendar-header ion-icon {
+  font-size: 18px;
+}
+
+.custom-datetime {
+  --background: transparent;
+  --background-rgb: transparent;
+  --title-color: var(--color-text);
+  --highlight-background: var(--color-primary);
+  --highlight-color: #ffffff;
+  --color: var(--color-text);
+  border-radius: 12px;
+}

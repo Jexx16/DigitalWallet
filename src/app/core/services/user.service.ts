@@ -56,4 +56,36 @@ export class UserService {
   async updateFcmToken(uid: string, token: string): Promise<void> {
     return this.updateUserProfile(uid, { fcmToken: token } as any);
   }
+  /**
+   * Asegura que el perfil del usuario exista en Firestore.
+   * Útil para inicios de sesión con Google donde no hay un paso de registro previo.
+   */
+  async ensureUserProfileExists(uid: string, email: string, displayName?: string): Promise<void> {
+    try {
+      const doc = await this.firestoreService.getDocumentOnce<UserProfile>(`users/${uid}`);
+      
+      if (!doc) {
+        console.log('[UserService] Perfil no encontrado, creando perfil básico para Google Login...');
+        const nameParts = displayName ? displayName.split(' ') : [];
+        const nombre = nameParts[0] || 'Usuario';
+        const apellido = nameParts.slice(1).join(' ') || '';
+
+        const profile: Omit<UserProfile, 'createdAt'> = {
+          uid,
+          nombre,
+          apellido,
+          email,
+          tipoDocumento: 'CC', // Valor por defecto
+          numeroDocumento: 'Pendiente',
+          pais: 'Colombia', // Valor por defecto
+          biometricEnabled: false
+        };
+
+        await this.createUserProfile(profile);
+      }
+    } catch (error) {
+      console.error('[UserService] Error al asegurar el perfil del usuario:', error);
+      throw error;
+    }
+  }
 }

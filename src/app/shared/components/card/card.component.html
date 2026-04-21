@@ -1,0 +1,39 @@
+<div class="wallet-card" [style.background]="getCardGradient()">
+  <div class="card-top">
+    <div class="card-chip">
+      <div class="chip-line"></div>
+      <div class="chip-line"></div>
+      <div class="chip-line"></div>
+      <div class="chip-line"></div>
+    </div>
+    <div class="card-franchise">
+      <img *ngIf="card.franchise === 'visa'"
+           src="assets/icon/visa-logo.svg"
+           alt="Visa"
+           class="franchise-logo visa-logo" />
+      <img *ngIf="card.franchise === 'mastercard'"
+           src="assets/icon/mastercard-logo.svg"
+           alt="Mastercard"
+           class="franchise-logo mastercard-logo" />
+      <ion-icon *ngIf="card.franchise === 'unknown'"
+                name="card-outline"
+                class="franchise-icon"></ion-icon>
+    </div>
+  </div>
+
+  <div class="card-number">
+    <span class="masked">•••• •••• ••••</span>
+    <span class="last-four">{{ card.cardNumber }}</span>
+  </div>
+
+  <div class="card-bottom">
+    <div class="card-holder">
+      <span class="card-label">TITULAR</span>
+      <span class="card-value">{{ card.cardHolder | uppercase }}</span>
+    </div>
+    <div class="card-expiry">
+      <span class="card-label">VENCE</span>
+      <span class="card-value">{{ card.expiryDate }}</span>
+    </div>
+  </div>
+</div>

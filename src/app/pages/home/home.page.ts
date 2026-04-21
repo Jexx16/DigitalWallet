@@ -4,7 +4,7 @@ import { Timestamp } from '@angular/fire/firestore';
 import { EmojiEvent } from '@ctrl/ngx-emoji-mart/ngx-emoji';
 import { Subscription, filter, firstValueFrom, take } from 'rxjs';
 import { Router } from '@angular/router';
-import { AlertController } from '@ionic/angular';
+import { AlertController, ModalController } from '@ionic/angular';
 import { AuthService } from '../../core/services/auth.service';
 import { BiometricService } from '../../core/services/biometric.service';
 import { CardService, CardUpdateRequest } from '../../core/services/card.service';
@@ -12,6 +12,7 @@ import { NotificationService, NotificationSummary } from '../../core/services/no
 import { PaymentService } from '../../core/services/payment.service';
 import { ToastService } from '../../core/services/toast.service';
 import { UserService } from '../../core/services/user.service';
+import { EmojiPickerModalComponent } from '../../shared/components/emoji-picker-modal/emoji-picker-modal.component';
 import { TransactionStatsService, TransactionStats } from '../../core/services/transaction-stats.service';
 import { Card } from '../../models/card.model';
 import { Transaction } from '../../models/transaction.model';
@@ -76,6 +77,7 @@ export class HomePage implements OnInit, OnDestroy {
     private transactionStatsService: TransactionStatsService,
     private toastService: ToastService,
     private alertController: AlertController,
+    private modalController: ModalController,
     private router: Router
   ) {}
 
@@ -383,20 +385,32 @@ export class HomePage implements OnInit, OnDestroy {
     this.subscribeToCardTransactions();
   }
 
-  onTransactionLongPress(transaction: Transaction): void {
+  async onTransactionLongPress(transaction: Transaction): Promise<void> {
     this.selectedTransaction = transaction;
-    this.showEmojiPicker = true;
+    
+    const modal = await this.modalController.create({
+      component: EmojiPickerModalComponent,
+      componentProps: {
+        currentEmoji: transaction.emoji
+      },
+      breakpoints: [0, 0.5, 0.7],
+      initialBreakpoint: 0.5,
+      handle: true,
+      cssClass: 'emoji-picker-modal'
+    });
+
+    await modal.present();
+
+    const { data, role } = await modal.onDidDismiss();
+    if (role === 'selected' && data) {
+      await this.saveEmojiSelection(data);
+    }
+    
+    this.selectedTransaction = null;
   }
 
-  async onEmojiSelected(event: EmojiEvent): Promise<void> {
+  private async saveEmojiSelection(emoji: string): Promise<void> {
     if (!this.uid || !this.selectedTransaction?.id) {
-      this.closeEmojiPicker();
-      return;
-    }
-
-    const emoji = event.emoji.native;
-    if (!emoji) {
-      this.closeEmojiPicker();
       return;
     }
 
@@ -406,10 +420,13 @@ export class HomePage implements OnInit, OnDestroy {
         this.selectedTransaction.id,
         emoji
       );
+      
+      // Actualizar localmente para feedback inmediato si no se refresca por subscripción
+      this.selectedTransaction.emoji = emoji;
+      
+      await this.toastService.showSuccess('Reacción guardada');
     } catch (error) {
       await this.toastService.showError(this.getErrorMessage(error));
-    } finally {
-      this.closeEmojiPicker();
     }
   }
 

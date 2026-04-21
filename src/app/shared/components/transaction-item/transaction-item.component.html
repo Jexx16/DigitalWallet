@@ -1,0 +1,26 @@
+<div class="transaction-item"
+     (mousedown)="onPressStart()"
+     (mouseup)="onPressEnd()"
+     (mouseleave)="onPressEnd()"
+     (touchstart)="onPressStart()"
+     (touchend)="onPressEnd()"
+     (touchcancel)="onPressEnd()">
+  <div class="tx-left">
+    <div class="tx-emoji">
+      {{ transaction.emoji || getDefaultEmoji() }}
+    </div>
+    <div class="tx-info">
+      <span class="tx-merchant">{{ transaction.merchant }}</span>
+      <span class="tx-date">{{ formatDate(transaction.date) }}</span>
+    </div>
+  </div>
+  <div class="tx-right">
+    <span class="tx-amount" [class.failed]="transaction.status === 'failed'">
+      {{ transaction.status === 'failed' ? 'Fallido' : formatAmount(transaction.amount) }}
+    </span>
+    <span class="tx-status" [class.success]="transaction.status === 'success'"
+                            [class.fail]="transaction.status === 'failed'">
+      {{ transaction.status === 'success' ? '✓' : '✗' }}
+    </span>
+  </div>
+</div>

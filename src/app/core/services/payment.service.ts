@@ -4,6 +4,10 @@ import { BiometricService } from './biometric.service';
 import { Transaction } from '../../models/transaction.model';
 import { Observable, catchError, throwError } from 'rxjs';
 import { Timestamp, collection, query, where, orderBy, limit, collectionData, Firestore } from '@angular/fire/firestore';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { NotificationService } from './notification.service';
+import { UserService } from './user.service';
+import { firstValueFrom } from 'rxjs';
 
 export interface PaymentRequest {
   cardId: string;
@@ -28,6 +32,8 @@ export class PaymentService {
   constructor(
     private firestoreService: FirestoreService,
     private biometricService: BiometricService,
+    private notificationService: NotificationService,
+    private userService: UserService,
     private firestore: Firestore
   ) {}
 
@@ -80,6 +86,12 @@ export class PaymentService {
         `users/${uid}/transactions`,
         transaction
       );
+
+      // Feedback táctil de éxito
+      await Haptics.impact({ style: ImpactStyle.Heavy });
+
+      // Enviar notificación Push (Requerimiento del Mega Resumen)
+      this.triggerPaymentNotification(uid, paymentRequest.merchant, paymentRequest.amount);
 
       return {
         success: true,
@@ -224,6 +236,30 @@ export class PaymentService {
     } catch (error) {
       console.error('Error guardando transacción:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Dispara una notificación push tras un pago exitoso
+   */
+  private async triggerPaymentNotification(uid: string, merchant: string, amount: number): Promise<void> {
+    try {
+      const userProfile = await firstValueFrom(this.userService.getUserProfile(uid));
+      if (userProfile?.fcmToken) {
+        const formattedAmount = new Intl.NumberFormat('es-CO', {
+          style: 'currency',
+          currency: 'COP',
+          minimumFractionDigits: 0
+        }).format(amount);
+
+        await this.notificationService.sendPush(
+          userProfile.fcmToken,
+          'Pago Exitoso 💳',
+          `Has realizado un pago de ${formattedAmount} en ${merchant}.`
+        );
+      }
+    } catch (error) {
+      console.warn('[PaymentService] No se pudo enviar la notificación push:', error);
     }
   }
 }

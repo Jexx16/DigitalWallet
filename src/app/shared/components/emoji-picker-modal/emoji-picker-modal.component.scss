@@ -1,0 +1,30 @@
+ion-content {
+  --background: var(--color-bg-dark);
+}
+
+.picker-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 350px;
+}
+
+:host ::ng-deep .emoji-mart {
+  background: transparent !important;
+  color: white !important;
+  border: none !important;
+  width: 100% !important;
+}
+
+:host ::ng-deep .emoji-mart-category-label span {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: white !important;
+  font-weight: 700 !important;
+}
+
+:host ::ng-deep .emoji-mart-search input {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 10px !important;
+}

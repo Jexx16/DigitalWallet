@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Injector } from '@angular/core';
 import {
   Auth,
   signInWithEmailAndPassword,
@@ -16,6 +16,7 @@ import { GoogleSignIn, SignInResult } from '@capawesome/capacitor-google-sign-in
 import { NativeBiometric } from 'capacitor-native-biometric';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { UserService } from './user.service';
 
 @Injectable({
   providedIn: 'root'
@@ -27,7 +28,10 @@ export class AuthService {
   private readonly biometricServer = 'my-digital-wallet-auth';
   private googleInitialized = false;
 
-  constructor(private auth: Auth) {
+  constructor(
+    private auth: Auth,
+    private injector: Injector
+  ) {
     onAuthStateChanged(this.auth, (user) => {
       this.currentUserSubject.next(user);
     });
@@ -56,7 +60,16 @@ export class AuthService {
     try {
       const credential = GoogleAuthProvider.credential(normalizedToken);
       const result = await signInWithCredential(this.auth, credential);
-      console.log('✅ Login exitoso con Google:', result.user.email);
+      
+      // Sincronización automática con Firestore (Requerimiento del Mega Resumen)
+      const userService = this.injector.get(UserService);
+      await userService.ensureUserProfileExists(
+        result.user.uid,
+        result.user.email || '',
+        result.user.displayName || undefined
+      );
+
+      console.log('✅ Login exitoso con Google y perfil sincronizado:', result.user.email);
       return result.user;
     } catch (error: any) {
       console.error('❌ Error en loginWithGoogle:', error);

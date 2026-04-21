@@ -13,6 +13,8 @@ import { PaymentSimulatorComponent } from './components/payment-simulator/paymen
 import { SkeletonLoadingComponent } from './components/skeleton-loading/skeleton-loading.component';
 import { CalendarComponent } from './components/calendar/calendar.component';
 import { PaymentConfirmationComponent } from './components/payment-confirmation/payment-confirmation.component';
+import { EmojiPickerModalComponent } from './components/emoji-picker-modal/emoji-picker-modal.component';
+import { PickerModule } from '@ctrl/ngx-emoji-mart';
 
 @NgModule({
   declarations: [
@@ -25,13 +27,15 @@ import { PaymentConfirmationComponent } from './components/payment-confirmation/
     PaymentSimulatorComponent,
     SkeletonLoadingComponent,
     CalendarComponent,
-    PaymentConfirmationComponent
+    PaymentConfirmationComponent,
+    EmojiPickerModalComponent
   ],
   imports: [
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    IonicModule
+    IonicModule,
+    PickerModule
   ],
   exports: [
     CardComponent,
@@ -43,7 +47,8 @@ import { PaymentConfirmationComponent } from './components/payment-confirmation/
     PaymentSimulatorComponent,
     SkeletonLoadingComponent,
     CalendarComponent,
-    PaymentConfirmationComponent
+    PaymentConfirmationComponent,
+    EmojiPickerModalComponent
   ]
 })
 export class SharedModule {}
