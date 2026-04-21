@@ -48,19 +48,19 @@ export class NotificationService {
    */
   async initPushNotifications(uid: string): Promise<void> {
     if (!uid) {
-      console.warn('UID requerido para inicializar notificaciones push.');
+      console.warn('[Notifications] UID requerido para inicializar notificaciones push.');
       return;
     }
 
     // Validar que estemos en plataforma nativa
     if (!this.isNativePlatform()) {
-      console.log('Push notifications no disponibles en navegador. Saltando inicialización.');
+      console.log('[Notifications] ⚠️ Push notifications no disponibles en navegador. Saltando inicialización.');
       return;
     }
 
     // Evitar reinicialización si ya está activo con el mismo UID
     if (this.activeUid === uid && this.registrationListener && this.foregroundListener) {
-      console.log('Push notifications ya inicializadas para este UID.');
+      console.log('[Notifications] Push notifications ya inicializadas para este UID.');
       return;
     }
 
@@ -69,8 +69,9 @@ export class NotificationService {
       this.activeUid = uid;
 
       // 1️⃣ Solicitar permisos
+      console.log('[Notifications] 📋 Solicitando permisos de notificaciones...');
       const permStatus = await PushNotifications.requestPermissions();
-      console.log('Push permission status:', permStatus);
+      console.log('[Notifications] Permiso:', JSON.stringify(permStatus));
 
       if (permStatus.receive !== 'granted') {
         this.pushNotificationSummary(
@@ -78,9 +79,11 @@ export class NotificationService {
           'No se concedieron permisos para notificaciones push.',
           'system'
         );
-        console.warn('Permisos de notificaciones push denegados.');
+        console.warn('[Notifications] ❌ Permisos de notificaciones push denegados.');
         return;
       }
+
+      console.log('[Notifications] ✅ Permisos concedidos.');
 
       // 2️⃣ Agregar listeners ANTES de registrarse
       // Listener para registro exitoso
@@ -88,19 +91,22 @@ export class NotificationService {
         try {
           // Validar que el token no sea null o vacío
           if (!token.value) {
-            console.error('Token FCM vacío o nulo.');
+            console.error('[Notifications] ❌ Token FCM vacío o nulo.');
             return;
           }
-          console.log('FCM Token recibido:', token.value.substring(0, 20) + '...');
-          
-          // NO usar await en el callback del listener para evitar congelamientos
-          // El guardado del token es asincrónico pero no bloqueante
-          this.userService.updateFcmToken(uid, token.value).catch((error) => {
-            console.error('Error al guardar FCM token:', error);
-            // No mostrar toast aquí, solo loguear
-          });
+          console.log('[Notifications] 🔑 FCM Token recibido:', token.value.substring(0, 30) + '...');
+          console.log('[Notifications] 🔑 FCM Token completo (debug):', token.value);
+
+          // Guardar token en Firestore - NO usar await en el callback del listener
+          this.userService.updateFcmToken(uid, token.value)
+            .then(() => {
+              console.log('[Notifications] ✅ FCM token guardado en Firestore correctamente.');
+            })
+            .catch((error) => {
+              console.error('[Notifications] ❌ Error al guardar FCM token en Firestore:', error);
+            });
         } catch (error) {
-          console.error('Error en registration listener:', error);
+          console.error('[Notifications] Error en registration listener:', error);
         }
       });
 
@@ -110,14 +116,14 @@ export class NotificationService {
           const title = notification.title || 'Nueva notificación';
           const body = notification.body || 'Tienes una nueva notificación push.';
           this.pushNotificationSummary(title, body, 'push');
-          console.log('Push notification received in foreground:', title);
-          
-          // NO usar await en el callback del listener
-          this.toastService.show(title).catch((error) => {
-            console.error('Error al mostrar toast:', error);
+          console.log('[Notifications] 📬 Push notification recibida en foreground:', title, '-', body);
+
+          // Mostrar toast al usuario
+          this.toastService.show(`${title}: ${body}`).catch((error) => {
+            console.error('[Notifications] Error al mostrar toast:', error);
           });
         } catch (error) {
-          console.error('Error al procesar notificación recibida:', error);
+          console.error('[Notifications] Error al procesar notificación recibida:', error);
         }
       });
 
@@ -125,25 +131,47 @@ export class NotificationService {
       this.registrationErrorListener = await PushNotifications.addListener('registrationError', (error) => {
         try {
           const errorMsg = error.error || 'desconocido';
-          console.error('Registration error:', errorMsg);
+          console.error('[Notifications] ❌ Registration error:', errorMsg);
           this.pushNotificationSummary(
             'Error de notificaciones',
             `No se pudo registrar push: ${errorMsg}`,
             'system'
           );
-          // Solo loguear, no hacer toast
         } catch (err) {
-          console.error('Error manejando registration error listener:', err);
+          console.error('[Notifications] Error manejando registration error listener:', err);
         }
       });
 
       // 3️⃣ Registrarse después de configurar listeners
+      console.log('[Notifications] 📲 Registrando dispositivo para push...');
       await PushNotifications.register();
-      console.log('Push notifications registered successfully.');
+      console.log('[Notifications] ✅ Push notifications registered successfully.');
+
+      // 4️⃣ Pre-autenticar con el servicio de notificaciones
+      this.preAuthenticateNotificationService();
+
     } catch (error) {
-      console.error('Error inicializando push notifications:', error);
+      console.error('[Notifications] ❌ Error inicializando push notifications:', error);
       await this.toastService.showError(this.getErrorMessage(error));
     }
+  }
+
+  /**
+   * Pre-autentica con el servicio de notificaciones para tener el JWT listo
+   * cuando se necesite enviar una notificación
+   */
+  private preAuthenticateNotificationService(): void {
+    console.log('[Notifications] 🔐 Pre-autenticando con servicio de notificaciones...');
+    this.httpService.loginNotificationService(
+      environment.notificationServiceEmail,
+      environment.notificationServicePassword
+    ).then((token) => {
+      this.jwtToken = token;
+      console.log('[Notifications] ✅ JWT pre-autenticado y listo para enviar notificaciones.');
+    }).catch((error) => {
+      console.warn('[Notifications] ⚠️ No se pudo pre-autenticar con servicio de notificaciones:', error);
+      // No es crítico, se reintentará al enviar
+    });
   }
 
   /**
@@ -152,73 +180,89 @@ export class NotificationService {
   async clearPushSession(): Promise<void> {
     try {
       this.activeUid = null;
+      this.jwtToken = null;
       this.notificationsSubject.next([]);
       await this.removeListeners();
-      console.log('Push notifications session cleared.');
+      console.log('[Notifications] Push notifications session cleared.');
     } catch (error) {
-      console.error('Error al limpiar sesión de push:', error);
+      console.error('[Notifications] Error al limpiar sesión de push:', error);
     }
   }
 
   /**
    * Envía una notificación push al dispositivo del usuario
    * Valida token FCM antes de enviar
-   * NO bloquea si falla - es completamente asincrónico
+   * Reintenta login si el JWT expiró
    */
   async sendPush(fcmToken: string, title: string, body: string): Promise<void> {
+    console.log('[Notifications] 📤 Iniciando envío de notificación push...');
+
+    // Validar FCM token no sea null, undefined o vacío
+    if (!fcmToken || fcmToken.trim() === '') {
+      console.warn('[Notifications] ⚠️ FCM token no disponible para enviar notificación. El usuario no tiene token registrado.');
+      return; // No es un error crítico, solo log
+    }
+
+    // Validar título y cuerpo
+    if (!title || !body) {
+      console.warn('[Notifications] ⚠️ Título y cuerpo son requeridos para enviar notificación.');
+      return;
+    }
+
     try {
-      // Validar que estemos en plataforma nativa
-      if (!this.isNativePlatform()) {
-        console.log('Push envío no disponible en navegador.');
-        return;
-      }
-
-      // Validar FCM token no sea null, undefined o vacío
-      if (!fcmToken || fcmToken.trim() === '') {
-        console.warn('FCM token no disponible para enviar notificación.');
-        return; // No es un error crítico, solo log
-      }
-
-      // Validar título y cuerpo
-      if (!title || !body) {
-        console.warn('Título y cuerpo son requeridos para enviar notificación.');
-        return;
-      }
-
-      // Obtener JWT si no lo tenemos
+      // Obtener o renovar JWT si no lo tenemos
       if (!this.jwtToken) {
-        try {
+        console.log('[Notifications] 🔐 JWT no disponible, autenticando...');
+        this.jwtToken = await this.httpService.loginNotificationService(
+          environment.notificationServiceEmail,
+          environment.notificationServicePassword
+        );
+        console.log('[Notifications] ✅ JWT obtenido.');
+      }
+
+      // Intentar enviar la notificación
+      try {
+        await this.httpService.sendPushNotification(
+          this.jwtToken,
+          fcmToken,
+          title,
+          body
+        );
+        this.pushNotificationSummary(title, body, 'payment');
+        console.log('[Notifications] ✅ Push notification enviada exitosamente.');
+      } catch (sendError: any) {
+        // Si el error es 401/403 (token expirado), intentar re-login y reenviar
+        if (sendError?.status === 401 || sendError?.status === 403) {
+          console.log('[Notifications] 🔄 JWT expirado, reintentando login...');
+          this.jwtToken = null;
+
           this.jwtToken = await this.httpService.loginNotificationService(
             environment.notificationServiceEmail,
             environment.notificationServicePassword
           );
-        } catch (authError) {
-          console.warn('No se pudo autenticar con servicio de notificaciones:', authError);
-          // No es bloqueante - continuamos sin enviar push
-          return;
+
+          // Reintentar envío con nuevo token
+          await this.httpService.sendPushNotification(
+            this.jwtToken,
+            fcmToken,
+            title,
+            body
+          );
+          this.pushNotificationSummary(title, body, 'payment');
+          console.log('[Notifications] ✅ Push notification enviada exitosamente tras re-login.');
+        } else {
+          throw sendError; // Propagar otros errores
         }
       }
-
-      if (!this.jwtToken) {
-        console.warn('JWT no disponible para enviar notificación.');
-        return;
+    } catch (error: any) {
+      console.error('[Notifications] ❌ Error al enviar notificación push:', error);
+      if (error?.status) {
+        console.error('[Notifications] HTTP Status:', error.status);
+        console.error('[Notifications] HTTP Error:', JSON.stringify(error.error));
       }
-
-      // Intentar enviar la notificación
-      await this.httpService.sendPushNotification(
-        this.jwtToken,
-        fcmToken,
-        title,
-        body
-      );
-
-      this.pushNotificationSummary(title, body, 'payment');
-      console.log('Push notification sent successfully.');
-    } catch (error) {
-      console.warn('Error al enviar notificación push (no bloqueante):', error);
       // Reset del token para reintentar en próxima oportunidad
       this.jwtToken = null;
-      // No mostramos error al usuario - la notificación es un bonus, no crítica
+      // No relanzamos el error - la notificación es un bonus, no crítica
     }
   }
 
@@ -257,9 +301,9 @@ export class NotificationService {
         await this.foregroundListener.remove();
         this.foregroundListener = undefined;
       }
-      console.log('Push listeners removed.');
+      console.log('[Notifications] Push listeners removed.');
     } catch (error) {
-      console.error('Error al remover listeners:', error);
+      console.error('[Notifications] Error al remover listeners:', error);
     }
   }
 

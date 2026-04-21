@@ -191,20 +191,31 @@ export class PaymentPage implements OnInit, OnDestroy {
       console.log(`[Payment] ✅ Pago exitoso. ID: ${paymentResult.transactionId}`);
       
       // Feedback háptico de éxito
-      await Haptics.impact({ style: ImpactStyle.Medium });
+      try {
+        await Haptics.impact({ style: ImpactStyle.Medium });
+      } catch (hapticError) {
+        console.warn('[Payment] Haptics no disponible:', hapticError);
+      }
 
-      // Enviar notificación push si está disponible
-      if (this.userProfile?.fcmToken) {
+      // Enviar notificación push
+      const fcmToken = this.userProfile?.fcmToken;
+      console.log(`[Payment] 📤 FCM Token disponible: ${fcmToken ? 'Sí (' + fcmToken.substring(0, 20) + '...)' : 'No'}`);
+
+      if (fcmToken) {
         try {
           await this.notificationService.sendPush(
-            this.userProfile.fcmToken,
+            fcmToken,
             '✅ Pago Exitoso',
-            `$${this.formatCurrency(result.amount)} pagado en ${result.merchant}`
+            `${this.formatCurrency(result.amount)} pagado en ${result.merchant}`
           );
+          console.log('[Payment] ✅ Notificación push enviada.');
         } catch (notifError) {
-          console.warn('[Payment] No se pudo enviar notificación push:', notifError);
+          console.warn('[Payment] ⚠️ No se pudo enviar notificación push:', notifError);
           // No es crítico si falla la notificación
         }
+      } else {
+        console.warn('[Payment] ⚠️ No hay FCM token registrado para este usuario. La notificación push no se enviará.');
+        console.warn('[Payment] Verifica que el usuario haya otorgado permisos de notificaciones y que el token se haya guardado en Firestore.');
       }
 
       // Mostrar confirmación al usuario
